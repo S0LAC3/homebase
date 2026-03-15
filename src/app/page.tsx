@@ -1,65 +1,178 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import { createClient } from '@/lib/supabase/client';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import {
+  Home,
+  Calculator,
+  Wallet,
+  CheckSquare,
+  Building2,
+  ArrowRight,
+  Shield,
+} from 'lucide-react';
+import Link from 'next/link';
+import { useAuth } from '@/components/auth-provider';
+
+const features = [
+  {
+    icon: Building2,
+    title: 'Property Tracker',
+    description: 'Save and compare properties with detailed analysis and notes.',
+  },
+  {
+    icon: Calculator,
+    title: 'Mortgage Calculator',
+    description: 'Compare FHA, Conventional, and VA loans with King County limits built in.',
+  },
+  {
+    icon: Wallet,
+    title: 'Budget Planner',
+    description: 'Track income and expenses to see how a mortgage fits your finances.',
+  },
+  {
+    icon: CheckSquare,
+    title: 'Buying Checklist',
+    description: 'Stay on track from pre-approval to closing with a step-by-step checklist.',
+  },
+  {
+    icon: Shield,
+    title: 'Advisor Access',
+    description: 'Invite your loan officer or agent for read-only access to your data.',
+  },
+  {
+    icon: Home,
+    title: 'Seattle Focus',
+    description: 'Pre-loaded with King County FHA limits, tax rates, and WA first-time buyer programs.',
+  },
+];
+
+export default function LandingPage() {
+  const { user } = useAuth();
+
+  const handleSignIn = async () => {
+    const supabase = createClient();
+    await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
+  };
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+      {/* Header */}
+      <header className="container mx-auto px-4 py-6 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Home className="h-6 w-6 text-blue-600" />
+          <span className="font-bold text-xl">HomeBase</span>
+        </div>
+        {user ? (
+          <Button asChild>
+            <Link href="/dashboard">
+              Go to Dashboard <ArrowRight className="ml-2 h-4 w-4" />
+            </Link>
+          </Button>
+        ) : (
+          <Button onClick={handleSignIn}>Sign in with Google</Button>
+        )}
+      </header>
+
+      {/* Hero */}
+      <section className="container mx-auto px-4 py-20 text-center">
+        <div className="max-w-3xl mx-auto space-y-6">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-slate-900">
+            Your homebuying journey,{' '}
+            <span className="text-blue-600">organized</span>
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
+          <p className="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto">
+            Track properties, compare mortgage options, manage your budget, and stay on top of
+            every step — all in one place. Built with Seattle-area homebuyers in mind.
+          </p>
+          <div className="flex gap-4 justify-center">
+            {user ? (
+              <Button size="lg" asChild>
+                <Link href="/dashboard">
+                  Open Dashboard <ArrowRight className="ml-2 h-4 w-4" />
+                </Link>
+              </Button>
+            ) : (
+              <Button size="lg" onClick={handleSignIn}>
+                Get Started Free <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* Features */}
+      <section className="container mx-auto px-4 py-16">
+        <h2 className="text-2xl sm:text-3xl font-bold text-center mb-12">
+          Everything you need to buy a home
+        </h2>
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
+          {features.map((feature) => {
+            const Icon = feature.icon;
+            return (
+              <Card key={feature.title} className="border-slate-200">
+                <CardContent className="pt-6">
+                  <div className="flex items-start gap-4">
+                    <div className="rounded-lg bg-blue-50 p-2">
+                      <Icon className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold mb-1">{feature.title}</h3>
+                      <p className="text-sm text-muted-foreground">{feature.description}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="container mx-auto px-4 py-16 text-center">
+        <Card className="max-w-2xl mx-auto bg-blue-600 text-white border-0">
+          <CardContent className="py-12 space-y-4">
+            <h2 className="text-2xl font-bold">Ready to start your homebuying journey?</h2>
+            <p className="text-blue-100">
+              Free to use. No credit card required. Built for first-time homebuyers.
+            </p>
+            {user ? (
+              <Button size="lg" variant="secondary" asChild>
+                <Link href="/dashboard">Go to Dashboard</Link>
+              </Button>
+            ) : (
+              <Button size="lg" variant="secondary" onClick={handleSignIn}>
+                Sign in with Google
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t py-8 mt-8">
+        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
+          <p>© {new Date().getFullYear()} HomeBase. Built for Seattle-area homebuyers.</p>
+          <p className="mt-2">
+            Check out{' '}
             <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
+              href="https://www.wshfc.org/buyers/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:underline"
             >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+              Washington State Housing Finance Commission
+            </a>{' '}
+            programs for first-time homebuyer assistance.
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+      </footer>
     </div>
   );
 }
