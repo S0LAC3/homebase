@@ -70,7 +70,7 @@ export default function LandingPage() {
           <span className="font-bold text-xl">HomeBase</span>
         </div>
         {user ? (
-          <Button asChild>
+          <Button>
             <Link href="/dashboard">
               Go to Dashboard <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
@@ -93,7 +93,7 @@ export default function LandingPage() {
           </p>
           <div className="flex gap-4 justify-center">
             {user ? (
-              <Button size="lg" asChild>
+              <Button size="lg">
                 <Link href="/dashboard">
                   Open Dashboard <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
@@ -143,7 +143,7 @@ export default function LandingPage() {
               Free to use. No credit card required. Built for first-time homebuyers.
             </p>
             {user ? (
-              <Button size="lg" variant="secondary" asChild>
+              <Button size="lg" variant="secondary">
                 <Link href="/dashboard">Go to Dashboard</Link>
               </Button>
             ) : (

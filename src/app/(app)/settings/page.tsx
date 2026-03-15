@@ -257,7 +257,7 @@ export default function SettingsPage() {
               </CardDescription>
             </div>
             <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
-              <DialogTrigger asChild>
+              <DialogTrigger>
                 <Button size="sm">
                   <UserPlus className="mr-2 h-4 w-4" /> Invite
                 </Button>

@@ -130,7 +130,7 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
     return (
       <div className="text-center py-12">
         <p>Property not found.</p>
-        <Button variant="link" asChild><Link href="/properties">Back to properties</Link></Button>
+        <Button variant="link"><Link href="/properties">Back to properties</Link></Button>
       </div>
     );
   }
@@ -138,7 +138,7 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="icon" asChild>
+        <Button variant="ghost" size="icon">
           <Link href="/properties"><ArrowLeft className="h-4 w-4" /></Link>
         </Button>
         <div className="flex-1">
@@ -263,7 +263,7 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="year" label={{ value: 'Year', position: 'bottom' }} />
                 <YAxis tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
-                <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                <Tooltip formatter={(value) => formatCurrency(Number(value))} />
                 <Legend />
                 <Line type="monotone" dataKey="balance" stroke="#3b82f6" name="Remaining Balance" strokeWidth={2} dot={false} />
                 <Line type="monotone" dataKey="principal" stroke="#10b981" name="Annual Principal" dot={false} />

@@ -109,7 +109,7 @@ export default function PropertiesPage() {
           <p className="text-muted-foreground">Track and compare properties you&apos;re interested in.</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
+          <DialogTrigger>
             <Button><Plus className="mr-2 h-4 w-4" /> Add Property</Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">

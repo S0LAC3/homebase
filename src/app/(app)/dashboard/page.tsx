@@ -178,14 +178,14 @@ export default function DashboardPage() {
                       <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                  <Tooltip formatter={(value) => formatCurrency(Number(value))} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
               <div className="flex flex-col items-center justify-center h-[250px] text-muted-foreground">
                 <Wallet className="h-8 w-8 mb-2" />
                 <p>No budget items yet</p>
-                <Button variant="link" asChild className="mt-1">
+                <Button variant="link" className="mt-1">
                   <Link href="/budget">Add budget items</Link>
                 </Button>
               </div>

@@ -151,7 +151,7 @@ export default function BudgetPage() {
           <p className="text-muted-foreground">Track income vs expenses and see how a mortgage fits.</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
+          <DialogTrigger>
             <Button><Plus className="mr-2 h-4 w-4" /> Add Item</Button>
           </DialogTrigger>
           <DialogContent>
@@ -169,7 +169,7 @@ export default function BudgetPage() {
               {!form.is_income && (
                 <div className="space-y-2">
                   <Label>Category</Label>
-                  <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
+                  <Select value={form.category ?? 'Other'} onValueChange={(v: string | null) => setForm({ ...form, category: v ?? 'Other' })}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {EXPENSE_CATEGORIES.map((c) => (
@@ -298,7 +298,7 @@ export default function BudgetPage() {
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                    <Tooltip formatter={(value) => formatCurrency(Number(value))} />
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>

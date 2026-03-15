@@ -199,7 +199,7 @@ export default function ChecklistPage() {
           <p className="text-muted-foreground">Track your progress from pre-approval to closing.</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
+          <DialogTrigger>
             <Button><Plus className="mr-2 h-4 w-4" /> Add Step</Button>
           </DialogTrigger>
           <DialogContent>
@@ -310,7 +310,7 @@ export default function ChecklistPage() {
                   <div className="flex items-center gap-1">
                     <Select
                       value={item.status}
-                      onValueChange={(v) => handleStatusChange(item.id, v)}
+                      onValueChange={(v) => v && handleStatusChange(item.id, v)}
                     >
                       <SelectTrigger className="w-[130px] h-8 text-xs">
                         <SelectValue />

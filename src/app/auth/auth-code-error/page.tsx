@@ -7,7 +7,7 @@ export default function AuthCodeError() {
       <div className="text-center space-y-4">
         <h1 className="text-2xl font-bold">Authentication Error</h1>
         <p className="text-muted-foreground">Something went wrong during sign-in. Please try again.</p>
-        <Button asChild>
+        <Button>
           <Link href="/">Back to Home</Link>
         </Button>
       </div>

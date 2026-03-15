@@ -153,7 +153,7 @@ export default function CalculatorPage() {
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="name" />
                       <YAxis tickFormatter={(v) => `$${(v / 1000).toFixed(1)}k`} />
-                      <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                      <Tooltip formatter={(value) => formatCurrency(Number(value))} />
                       <Bar dataKey="Monthly Payment" fill="#3b82f6" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
@@ -169,7 +169,7 @@ export default function CalculatorPage() {
                       <CartesianGrid strokeDasharray="3 3" />
                       <XAxis dataKey="year" />
                       <YAxis tickFormatter={(v) => `$${(v / 1000).toFixed(0)}k`} />
-                      <Tooltip formatter={(value: number) => formatCurrency(value)} />
+                      <Tooltip formatter={(value) => formatCurrency(Number(value))} />
                       <Legend />
                       <Line type="monotone" dataKey="balance" stroke="#3b82f6" name="Balance" strokeWidth={2} dot={false} />
                       <Line type="monotone" dataKey="principal" stroke="#10b981" name="Annual Principal" dot={false} />

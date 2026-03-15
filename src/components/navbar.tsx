@@ -83,7 +83,7 @@ export function Navbar({ userName, userEmail }: { userName?: string | null; user
 
         <div className="flex items-center gap-2 ml-auto">
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
+            <DropdownMenuTrigger>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                 <Avatar className="h-8 w-8">
                   <AvatarFallback className="bg-blue-100 text-blue-700 text-xs">
@@ -100,7 +100,7 @@ export function Navbar({ userName, userEmail }: { userName?: string | null; user
                 </div>
               </div>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
+              <DropdownMenuItem>
                 <Link href="/settings">
                   <Settings className="mr-2 h-4 w-4" />
                   Settings
@@ -116,7 +116,7 @@ export function Navbar({ userName, userEmail }: { userName?: string | null; user
 
           {/* Mobile menu */}
           <Sheet open={open} onOpenChange={setOpen}>
-            <SheetTrigger asChild className="md:hidden">
+            <SheetTrigger className="md:hidden">
               <Button variant="ghost" size="icon">
                 <Menu className="h-5 w-5" />
               </Button>
