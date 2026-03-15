@@ -21,6 +21,7 @@ import { Calculator, ExternalLink, Info } from 'lucide-react';
 
 export default function CalculatorPage() {
   const [purchasePrice, setPurchasePrice] = useState('750000');
+  const [downPayment, setDownPayment] = useState('');
   const [interestRate, setInterestRate] = useState('6.5');
   const [loanTermYears, setLoanTermYears] = useState('30');
   const [hoaMonthly, setHoaMonthly] = useState('0');
@@ -34,12 +35,20 @@ export default function CalculatorPage() {
     const hoa = parseFloat(hoaMonthly) || 0;
     const tax = propertyTaxAnnual ? parseFloat(propertyTaxAnnual) : undefined;
 
-    const configs: { type: LoanType; dp: number }[] = [
+    const customDp = downPayment ? parseFloat(downPayment) : null;
+    const customDpPercent = customDp !== null ? (customDp / price) * 100 : null;
+
+    const configs: { type: LoanType; dp: number; label?: string }[] = [
       { type: 'FHA', dp: FHA_DOWN_PAYMENT_PERCENT },
       { type: 'Conventional', dp: 5 },
       { type: 'Conventional', dp: 20 },
       { type: 'VA', dp: 0 },
     ];
+
+    // Add custom down payment scenario if provided
+    if (customDpPercent !== null && customDpPercent > 0 && customDpPercent <= 100) {
+      configs.unshift({ type: 'Conventional', dp: Math.round(customDpPercent * 100) / 100, label: `Custom (${formatCurrency(customDp!)})` });
+    }
 
     const calcs = configs.map((c) =>
       calculateMortgage({
@@ -91,6 +100,15 @@ export default function CalculatorPage() {
             <div className="space-y-2">
               <Label>Purchase Price ($)</Label>
               <Input type="number" value={purchasePrice} onChange={(e) => setPurchasePrice(e.target.value)} />
+            </div>
+            <div className="space-y-2">
+              <Label>Down Payment ($)</Label>
+              <Input type="number" value={downPayment} onChange={(e) => setDownPayment(e.target.value)} placeholder="Optional — compares standard options" />
+              {downPayment && purchasePrice && (
+                <p className="text-xs text-muted-foreground">
+                  {((parseFloat(downPayment) / parseFloat(purchasePrice)) * 100).toFixed(1)}% of purchase price
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <Label>Interest Rate (%)</Label>
