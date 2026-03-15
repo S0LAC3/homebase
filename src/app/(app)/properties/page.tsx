@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Plus, Building2, MapPin, Bed, Bath, Ruler, ExternalLink } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatCurrency, KING_COUNTY_PROPERTY_TAX_RATE } from '@/lib/mortgage';
+import { AddressAutocomplete } from '@/components/address-autocomplete';
 import type { Property } from '@/types';
 import Link from 'next/link';
 
@@ -119,7 +120,12 @@ export default function PropertiesPage() {
             <div className="grid gap-4">
               <div className="space-y-2">
                 <Label>Address *</Label>
-                <Input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="123 Main St" />
+                <AddressAutocomplete
+                  value={form.address}
+                  onChange={(val) => setForm({ ...form, address: val })}
+                  onSelect={(result) => setForm({ ...form, address: result.address, city: result.city, state: result.state, zip: result.zip })}
+                  placeholder="Start typing an address..."
+                />
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <div className="space-y-2">
