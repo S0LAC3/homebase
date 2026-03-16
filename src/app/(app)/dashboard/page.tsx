@@ -25,7 +25,10 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user || !activeBuyerId) {
+    // For buyers, activeBuyerId = user.id. For advisors, it's the linked buyer's id.
+    // If user is set but activeBuyerId is still null (advisor with no linked buyer), stop loading.
+    const queryId = activeBuyerId ?? user?.id ?? null;
+    if (!user || !queryId) {
       setLoading(false);
       return;
     }
@@ -34,10 +37,10 @@ export default function DashboardPage() {
     const fetchData = async () => {
       try {
         const [propsRes, budgetRes, checkRes, scenRes] = await Promise.all([
-          supabase.from('properties').select('*').eq('user_id', activeBuyerId).order('created_at', { ascending: false }),
-          supabase.from('budget_items').select('*').eq('user_id', activeBuyerId),
-          supabase.from('checklist_items').select('*').eq('user_id', activeBuyerId).order('sort_order'),
-          supabase.from('mortgage_scenarios').select('*').eq('user_id', activeBuyerId).order('created_at', { ascending: false }),
+          supabase.from('properties').select('*').eq('user_id', queryId).order('created_at', { ascending: false }),
+          supabase.from('budget_items').select('*').eq('user_id', queryId),
+          supabase.from('checklist_items').select('*').eq('user_id', queryId).order('sort_order'),
+          supabase.from('mortgage_scenarios').select('*').eq('user_id', queryId).order('created_at', { ascending: false }),
         ]);
 
         if (propsRes.error) console.error('Dashboard: properties error', propsRes.error);
@@ -57,7 +60,7 @@ export default function DashboardPage() {
     };
 
     fetchData();
-  }, [user, authLoading, activeBuyerId]);
+  }, [user, authLoading, activeBuyerId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const totalIncome = budgetItems.filter((b) => b.is_income).reduce((s, b) => s + b.amount, 0);
   const totalExpenses = budgetItems.filter((b) => !b.is_income).reduce((s, b) => s + b.amount, 0);

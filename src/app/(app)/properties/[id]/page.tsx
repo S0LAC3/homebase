@@ -42,7 +42,8 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user || !activeBuyerId) {
+    const queryId = activeBuyerId ?? user?.id ?? null;
+    if (!user || !queryId) {
       setLoading(false);
       return;
     }
@@ -50,8 +51,8 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
     const fetchData = async () => {
       try {
         const [propRes, scenRes] = await Promise.all([
-          supabase.from('properties').select('*').eq('id', id).eq('user_id', activeBuyerId).single(),
-          supabase.from('mortgage_scenarios').select('*').eq('property_id', id).eq('user_id', activeBuyerId).order('created_at', { ascending: false }),
+          supabase.from('properties').select('*').eq('id', id).eq('user_id', queryId).single(),
+          supabase.from('mortgage_scenarios').select('*').eq('property_id', id).eq('user_id', queryId).order('created_at', { ascending: false }),
         ]);
         setProperty(propRes.data);
         setScenarios(scenRes.data ?? []);

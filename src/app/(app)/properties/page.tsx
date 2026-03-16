@@ -33,7 +33,8 @@ export default function PropertiesPage() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user || !activeBuyerId) {
+    const queryId = activeBuyerId ?? user?.id ?? null;
+    if (!user || !queryId) {
       setLoading(false);
       return;
     }
@@ -43,7 +44,7 @@ export default function PropertiesPage() {
         const { data } = await supabase
           .from('properties')
           .select('*')
-          .eq('user_id', activeBuyerId)
+          .eq('user_id', queryId)
           .order('created_at', { ascending: false });
         setProperties(data ?? []);
       } catch (error) {
