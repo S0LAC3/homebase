@@ -89,29 +89,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    const getUser = async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        setUser(user);
-        if (user) {
-          const prof = await fetchProfile(user.id);
-          if (prof?.role === 'advisor') {
-            const buyers = await fetchLinkedBuyers(user.id);
-            setLinkedBuyers(buyers);
-            if (buyers.length > 0) {
-              setActiveBuyerIdState(buyers[0].id);
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Auth: failed to get user', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    getUser();
-
+    // Use onAuthStateChange as the single source of truth.
+    // INITIAL_SESSION fires immediately with the current session (or null).
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         const currentUser = session?.user ?? null;
@@ -122,9 +101,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             if (prof?.role === 'advisor') {
               const buyers = await fetchLinkedBuyers(currentUser.id);
               setLinkedBuyers(buyers);
-              if (buyers.length > 0 && !activeBuyerIdState) {
-                setActiveBuyerIdState(buyers[0].id);
+              if (buyers.length > 0) {
+                setActiveBuyerIdState((prev) => prev ?? buyers[0].id);
               }
+            } else {
+              setLinkedBuyers([]);
+              setActiveBuyerIdState(null);
             }
           } catch (error) {
             console.error('Auth: failed to fetch profile', error);
