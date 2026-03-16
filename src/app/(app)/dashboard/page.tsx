@@ -163,10 +163,16 @@ export default function DashboardPage() {
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{properties.length}</div>
-            <Link href="/properties" className="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-1">
-              View all <ArrowRight className="h-3 w-3" />
-            </Link>
+            <div className="text-2xl font-bold">{properties.length > 0 ? properties.length : '—'}</div>
+            {properties.length > 0 ? (
+              <Link href="/properties" className="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-1">
+                View all <ArrowRight className="h-3 w-3" />
+              </Link>
+            ) : (
+              <Link href="/properties" className="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-1">
+                Add a property <ArrowRight className="h-3 w-3" />
+              </Link>
+            )}
           </CardContent>
         </Card>
 
@@ -176,10 +182,21 @@ export default function DashboardPage() {
             <Wallet className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(totalIncome - totalExpenses)}</div>
-            <p className="text-xs text-muted-foreground">
-              {formatCurrency(totalIncome)} income – {formatCurrency(totalExpenses)} expenses
-            </p>
+            {budgetItems.length > 0 ? (
+              <>
+                <div className="text-2xl font-bold">{formatCurrency(totalIncome - totalExpenses)}</div>
+                <p className="text-xs text-muted-foreground">
+                  {formatCurrency(totalIncome)} income – {formatCurrency(totalExpenses)} expenses
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">—</div>
+                <Link href="/budget" className="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-1">
+                  Set up budget <ArrowRight className="h-3 w-3" />
+                </Link>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -189,13 +206,24 @@ export default function DashboardPage() {
             <CheckSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {completedChecklist}/{checklist.length}
-            </div>
-            {nextChecklistItem && (
-              <p className="text-xs text-muted-foreground mt-1 truncate">
-                Next: {nextChecklistItem.title}
-              </p>
+            {checklist.length > 0 ? (
+              <>
+                <div className="text-2xl font-bold">
+                  {completedChecklist}/{checklist.length}
+                </div>
+                {nextChecklistItem && (
+                  <p className="text-xs text-muted-foreground mt-1 truncate">
+                    Next: {nextChecklistItem.title}
+                  </p>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">—</div>
+                <Link href="/checklist" className="text-xs text-blue-600 hover:underline flex items-center gap-1 mt-1">
+                  Start checklist <ArrowRight className="h-3 w-3" />
+                </Link>
+              </>
             )}
           </CardContent>
         </Card>
