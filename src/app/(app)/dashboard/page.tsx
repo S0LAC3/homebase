@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Building2, Wallet, CheckSquare, Calculator, ArrowRight, ExternalLink } from 'lucide-react';
+import { Building2, Wallet, CheckSquare, Calculator, ArrowRight, ExternalLink, Rocket } from 'lucide-react';
 import Link from 'next/link';
 import { formatCurrency, WSHFC_PROGRAMS } from '@/lib/mortgage';
 import type { Property, BudgetItem, ChecklistItem, MortgageScenario } from '@/types';
@@ -39,6 +39,11 @@ export default function DashboardPage() {
           supabase.from('checklist_items').select('*').eq('user_id', user.id).order('sort_order'),
           supabase.from('mortgage_scenarios').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
         ]);
+
+        if (propsRes.error) console.error('Dashboard: properties error', propsRes.error);
+        if (budgetRes.error) console.error('Dashboard: budget error', budgetRes.error);
+        if (checkRes.error) console.error('Dashboard: checklist error', checkRes.error);
+        if (scenRes.error) console.error('Dashboard: scenarios error', scenRes.error);
 
         setProperties(propsRes.data ?? []);
         setBudgetItems(budgetRes.data ?? []);
@@ -82,14 +87,53 @@ export default function DashboardPage() {
     );
   }
 
+  const isEmpty = properties.length === 0 && budgetItems.length === 0 && checklist.length === 0 && scenarios.length === 0;
+  const profileIncomplete = !profile?.income && !profile?.credit_score;
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">
-          Welcome back{profile?.name ? `, ${profile.name.split(' ')[0]}` : ''}
+          Welcome{profile?.name ? `, ${profile.name.split(' ')[0]}` : ''}!
         </h1>
         <p className="text-muted-foreground">Here&apos;s your homebuying overview.</p>
       </div>
+
+      {/* Getting Started Banner */}
+      {(isEmpty || profileIncomplete) && (
+        <Card className="border-blue-200 bg-blue-50/50">
+          <CardContent className="flex flex-col sm:flex-row items-center gap-4 py-6">
+            <div className="flex-shrink-0">
+              <Rocket className="h-10 w-10 text-blue-500" />
+            </div>
+            <div className="flex-1 text-center sm:text-left">
+              <h2 className="text-lg font-semibold">Get started with HomeBase</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                {profileIncomplete
+                  ? 'Complete your profile to get personalized mortgage estimates, then start adding properties and building your budget.'
+                  : 'Start by saving properties you like, setting up your budget, or running a mortgage calculation.'}
+              </p>
+            </div>
+            <div className="flex gap-2 flex-wrap justify-center">
+              {profileIncomplete && (
+                <Link href="/onboard">
+                  <Button size="sm">Complete Profile</Button>
+                </Link>
+              )}
+              <Link href="/properties">
+                <Button size="sm" variant={profileIncomplete ? 'outline' : 'default'}>
+                  <Building2 className="mr-1 h-4 w-4" /> Add Property
+                </Button>
+              </Link>
+              <Link href="/calculator">
+                <Button size="sm" variant="outline">
+                  <Calculator className="mr-1 h-4 w-4" /> Calculator
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Summary Cards */}
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
