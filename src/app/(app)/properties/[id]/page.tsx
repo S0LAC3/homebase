@@ -27,7 +27,7 @@ import {
 
 export default function PropertyDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const router = useRouter();
   const [property, setProperty] = useState<Property | null>(null);
   const [scenarios, setScenarios] = useState<MortgageScenario[]>([]);
@@ -41,17 +41,28 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
   });
 
   useEffect(() => {
-    if (!user) return;
-    const supabase = createClient();
-    Promise.all([
-      supabase.from('properties').select('*').eq('id', id).eq('user_id', user.id).single(),
-      supabase.from('mortgage_scenarios').select('*').eq('property_id', id).eq('user_id', user.id).order('created_at', { ascending: false }),
-    ]).then(([propRes, scenRes]) => {
-      setProperty(propRes.data);
-      setScenarios(scenRes.data ?? []);
+    if (authLoading) return;
+    if (!user) {
       setLoading(false);
-    });
-  }, [user, id]);
+      return;
+    }
+    const supabase = createClient();
+    const fetchData = async () => {
+      try {
+        const [propRes, scenRes] = await Promise.all([
+          supabase.from('properties').select('*').eq('id', id).eq('user_id', user.id).single(),
+          supabase.from('mortgage_scenarios').select('*').eq('property_id', id).eq('user_id', user.id).order('created_at', { ascending: false }),
+        ]);
+        setProperty(propRes.data);
+        setScenarios(scenRes.data ?? []);
+      } catch (error) {
+        console.error('Property detail: failed to fetch data', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [user, authLoading, id]);
 
   const handleCalculate = async () => {
     if (!user || !property) return;

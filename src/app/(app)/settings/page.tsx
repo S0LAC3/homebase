@@ -26,7 +26,7 @@ interface AdvisorAccessWithProfile extends AdvisorAccess {
 }
 
 export default function SettingsPage() {
-  const { user, profile, refreshProfile } = useAuth();
+  const { user, profile, refreshProfile, loading: authLoading } = useAuth();
   const [saving, setSaving] = useState(false);
   const [advisors, setAdvisors] = useState<AdvisorAccessWithProfile[]>([]);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
@@ -56,17 +56,27 @@ export default function SettingsPage() {
   }, [profile]);
 
   useEffect(() => {
-    if (!user) return;
+    if (authLoading) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     const supabase = createClient();
-    supabase
-      .from('advisor_access')
-      .select('*, advisor:advisor_id(name, email)')
-      .eq('buyer_id', user.id)
-      .then(({ data }) => {
+    const fetchData = async () => {
+      try {
+        const { data } = await supabase
+          .from('advisor_access')
+          .select('*, advisor:advisor_id(name, email)')
+          .eq('buyer_id', user.id);
         setAdvisors((data as AdvisorAccessWithProfile[] | null) ?? []);
+      } catch (error) {
+        console.error('Settings: failed to fetch advisors', error);
+      } finally {
         setLoading(false);
-      });
-  }, [user]);
+      }
+    };
+    fetchData();
+  }, [user, authLoading]);
 
   const handleSave = async () => {
     if (!user) return;

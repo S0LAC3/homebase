@@ -19,7 +19,7 @@ import type { Property } from '@/types';
 import Link from 'next/link';
 
 export default function PropertiesPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -32,18 +32,28 @@ export default function PropertiesPage() {
   });
 
   useEffect(() => {
-    if (!user) return;
+    if (authLoading) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     const supabase = createClient();
-    supabase
-      .from('properties')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-      .then(({ data }) => {
+    const fetchData = async () => {
+      try {
+        const { data } = await supabase
+          .from('properties')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false });
         setProperties(data ?? []);
+      } catch (error) {
+        console.error('Properties: failed to fetch data', error);
+      } finally {
         setLoading(false);
-      });
-  }, [user]);
+      }
+    };
+    fetchData();
+  }, [user, authLoading]);
 
   const handleAdd = async () => {
     if (!user || !form.address || !form.price) {

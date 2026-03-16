@@ -16,7 +16,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
 export default function DashboardPage() {
-  const { user, profile } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const [properties, setProperties] = useState<Property[]>([]);
   const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([]);
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
@@ -24,26 +24,35 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
+    if (authLoading) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     const supabase = createClient();
 
     const fetchData = async () => {
-      const [propsRes, budgetRes, checkRes, scenRes] = await Promise.all([
-        supabase.from('properties').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
-        supabase.from('budget_items').select('*').eq('user_id', user.id),
-        supabase.from('checklist_items').select('*').eq('user_id', user.id).order('sort_order'),
-        supabase.from('mortgage_scenarios').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
-      ]);
+      try {
+        const [propsRes, budgetRes, checkRes, scenRes] = await Promise.all([
+          supabase.from('properties').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+          supabase.from('budget_items').select('*').eq('user_id', user.id),
+          supabase.from('checklist_items').select('*').eq('user_id', user.id).order('sort_order'),
+          supabase.from('mortgage_scenarios').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+        ]);
 
-      setProperties(propsRes.data ?? []);
-      setBudgetItems(budgetRes.data ?? []);
-      setChecklist(checkRes.data ?? []);
-      setScenarios(scenRes.data ?? []);
-      setLoading(false);
+        setProperties(propsRes.data ?? []);
+        setBudgetItems(budgetRes.data ?? []);
+        setChecklist(checkRes.data ?? []);
+        setScenarios(scenRes.data ?? []);
+      } catch (error) {
+        console.error('Dashboard: failed to fetch data', error);
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchData();
-  }, [user]);
+  }, [user, authLoading]);
 
   const totalIncome = budgetItems.filter((b) => b.is_income).reduce((s, b) => s + b.amount, 0);
   const totalExpenses = budgetItems.filter((b) => !b.is_income).reduce((s, b) => s + b.amount, 0);

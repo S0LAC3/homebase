@@ -50,7 +50,7 @@ const COLORS = [
 ];
 
 export default function BudgetPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [items, setItems] = useState<BudgetItem[]>([]);
   const [scenarios, setScenarios] = useState<MortgageScenario[]>([]);
   const [loading, setLoading] = useState(true);
@@ -65,17 +65,28 @@ export default function BudgetPage() {
   });
 
   useEffect(() => {
-    if (!user) return;
-    const supabase = createClient();
-    Promise.all([
-      supabase.from('budget_items').select('*').eq('user_id', user.id).order('created_at'),
-      supabase.from('mortgage_scenarios').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1),
-    ]).then(([budgetRes, scenRes]) => {
-      setItems(budgetRes.data ?? []);
-      setScenarios(scenRes.data ?? []);
+    if (authLoading) return;
+    if (!user) {
       setLoading(false);
-    });
-  }, [user]);
+      return;
+    }
+    const supabase = createClient();
+    const fetchData = async () => {
+      try {
+        const [budgetRes, scenRes] = await Promise.all([
+          supabase.from('budget_items').select('*').eq('user_id', user.id).order('created_at'),
+          supabase.from('mortgage_scenarios').select('*').eq('user_id', user.id).order('created_at', { ascending: false }).limit(1),
+        ]);
+        setItems(budgetRes.data ?? []);
+        setScenarios(scenRes.data ?? []);
+      } catch (error) {
+        console.error('Budget: failed to fetch data', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, [user, authLoading]);
 
   const handleAdd = async () => {
     if (!user || !form.amount || !form.description) {

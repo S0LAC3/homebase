@@ -46,7 +46,7 @@ const statusConfig = {
 };
 
 export default function ChecklistPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [items, setItems] = useState<ChecklistItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -59,18 +59,28 @@ export default function ChecklistPage() {
   });
 
   useEffect(() => {
-    if (!user) return;
+    if (authLoading) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
     const supabase = createClient();
-    supabase
-      .from('checklist_items')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('sort_order')
-      .then(({ data }) => {
+    const fetchData = async () => {
+      try {
+        const { data } = await supabase
+          .from('checklist_items')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('sort_order');
         setItems(data ?? []);
+      } catch (error) {
+        console.error('Checklist: failed to fetch data', error);
+      } finally {
         setLoading(false);
-      });
-  }, [user]);
+      }
+    };
+    fetchData();
+  }, [user, authLoading]);
 
   const handleAdd = async () => {
     if (!user || !form.title) {
