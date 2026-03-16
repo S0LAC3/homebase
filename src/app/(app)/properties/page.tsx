@@ -19,7 +19,7 @@ import type { Property } from '@/types';
 import Link from 'next/link';
 
 export default function PropertiesPage() {
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, activeBuyerId, isAdvisor } = useAuth();
   const [properties, setProperties] = useState<Property[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -33,7 +33,7 @@ export default function PropertiesPage() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user) {
+    if (!user || !activeBuyerId) {
       setLoading(false);
       return;
     }
@@ -43,7 +43,7 @@ export default function PropertiesPage() {
         const { data } = await supabase
           .from('properties')
           .select('*')
-          .eq('user_id', user.id)
+          .eq('user_id', activeBuyerId)
           .order('created_at', { ascending: false });
         setProperties(data ?? []);
       } catch (error) {
@@ -53,7 +53,7 @@ export default function PropertiesPage() {
       }
     };
     fetchData();
-  }, [user, authLoading]);
+  }, [user, authLoading, activeBuyerId]);
 
   const handleAdd = async () => {
     if (!user || !form.address || !form.price) {
@@ -119,86 +119,88 @@ export default function PropertiesPage() {
           <h1 className="text-2xl font-bold">Properties</h1>
           <p className="text-muted-foreground">Track and compare properties you&apos;re interested in.</p>
         </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger>
-            <Button><Plus className="mr-2 h-4 w-4" /> Add Property</Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Add Property</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4">
-              <div className="space-y-2">
-                <Label>Address *</Label>
-                <AddressAutocomplete
-                  value={form.address}
-                  onChange={(val) => setForm({ ...form, address: val })}
-                  onSelect={(result) => setForm({ ...form, address: result.address, city: result.city, state: result.state, zip: result.zip })}
-                  placeholder="Start typing an address..."
-                />
+        {!isAdvisor && (
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger>
+              <Button><Plus className="mr-2 h-4 w-4" /> Add Property</Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Add Property</DialogTitle>
+              </DialogHeader>
+              <div className="grid gap-4">
+                <div className="space-y-2">
+                  <Label>Address *</Label>
+                  <AddressAutocomplete
+                    value={form.address}
+                    onChange={(val) => setForm({ ...form, address: val })}
+                    onSelect={(result) => setForm({ ...form, address: result.address, city: result.city, state: result.state, zip: result.zip })}
+                    placeholder="Start typing an address..."
+                  />
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="space-y-2">
+                    <Label>City</Label>
+                    <Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>State</Label>
+                    <Input value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>ZIP</Label>
+                    <Input value={form.zip} onChange={(e) => setForm({ ...form, zip: e.target.value })} placeholder="98101" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-2">
+                    <Label>Price *</Label>
+                    <Input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="750000" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Sq Ft</Label>
+                    <Input type="number" value={form.sqft} onChange={(e) => setForm({ ...form, sqft: e.target.value })} placeholder="1800" />
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="space-y-2">
+                    <Label>Beds</Label>
+                    <Input type="number" value={form.bedrooms} onChange={(e) => setForm({ ...form, bedrooms: e.target.value })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Baths</Label>
+                    <Input type="number" step="0.5" value={form.bathrooms} onChange={(e) => setForm({ ...form, bathrooms: e.target.value })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Year Built</Label>
+                    <Input type="number" value={form.year_built} onChange={(e) => setForm({ ...form, year_built: e.target.value })} />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-2">
+                    <Label>Monthly HOA ($)</Label>
+                    <Input type="number" value={form.hoa_monthly} onChange={(e) => setForm({ ...form, hoa_monthly: e.target.value })} />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Annual Property Tax ($)</Label>
+                    <Input type="number" value={form.property_tax_annual} onChange={(e) => setForm({ ...form, property_tax_annual: e.target.value })} placeholder="Auto: ~1% of price" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Listing URL</Label>
+                  <Input value={form.listing_url} onChange={(e) => setForm({ ...form, listing_url: e.target.value })} placeholder="https://..." />
+                </div>
+                <div className="space-y-2">
+                  <Label>Notes</Label>
+                  <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Great backyard, needs new roof..." />
+                </div>
+                <Button onClick={handleAdd} disabled={saving}>
+                  {saving ? 'Adding...' : 'Add Property'}
+                </Button>
               </div>
-              <div className="grid grid-cols-3 gap-2">
-                <div className="space-y-2">
-                  <Label>City</Label>
-                  <Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <Label>State</Label>
-                  <Input value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <Label>ZIP</Label>
-                  <Input value={form.zip} onChange={(e) => setForm({ ...form, zip: e.target.value })} placeholder="98101" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-2">
-                  <Label>Price *</Label>
-                  <Input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="750000" />
-                </div>
-                <div className="space-y-2">
-                  <Label>Sq Ft</Label>
-                  <Input type="number" value={form.sqft} onChange={(e) => setForm({ ...form, sqft: e.target.value })} placeholder="1800" />
-                </div>
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                <div className="space-y-2">
-                  <Label>Beds</Label>
-                  <Input type="number" value={form.bedrooms} onChange={(e) => setForm({ ...form, bedrooms: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Baths</Label>
-                  <Input type="number" step="0.5" value={form.bathrooms} onChange={(e) => setForm({ ...form, bathrooms: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Year Built</Label>
-                  <Input type="number" value={form.year_built} onChange={(e) => setForm({ ...form, year_built: e.target.value })} />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="space-y-2">
-                  <Label>Monthly HOA ($)</Label>
-                  <Input type="number" value={form.hoa_monthly} onChange={(e) => setForm({ ...form, hoa_monthly: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <Label>Annual Property Tax ($)</Label>
-                  <Input type="number" value={form.property_tax_annual} onChange={(e) => setForm({ ...form, property_tax_annual: e.target.value })} placeholder="Auto: ~1% of price" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Listing URL</Label>
-                <Input value={form.listing_url} onChange={(e) => setForm({ ...form, listing_url: e.target.value })} placeholder="https://..." />
-              </div>
-              <div className="space-y-2">
-                <Label>Notes</Label>
-                <Textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Great backyard, needs new roof..." />
-              </div>
-              <Button onClick={handleAdd} disabled={saving}>
-                {saving ? 'Adding...' : 'Add Property'}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       {properties.length === 0 ? (
@@ -206,7 +208,9 @@ export default function PropertiesPage() {
           <CardContent className="flex flex-col items-center justify-center py-12 text-muted-foreground">
             <Building2 className="h-12 w-12 mb-4" />
             <p className="text-lg font-medium">No properties saved yet</p>
-            <p className="text-sm">Add your first property to start comparing.</p>
+            <p className="text-sm">
+              {isAdvisor ? 'This buyer hasn\'t added any properties yet.' : 'Add your first property to start comparing.'}
+            </p>
           </CardContent>
         </Card>
       ) : (

@@ -16,7 +16,7 @@ import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
 
 export default function DashboardPage() {
-  const { user, profile, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading, activeBuyerId, isAdvisor } = useAuth();
   const [properties, setProperties] = useState<Property[]>([]);
   const [budgetItems, setBudgetItems] = useState<BudgetItem[]>([]);
   const [checklist, setChecklist] = useState<ChecklistItem[]>([]);
@@ -25,7 +25,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user) {
+    if (!user || !activeBuyerId) {
       setLoading(false);
       return;
     }
@@ -34,10 +34,10 @@ export default function DashboardPage() {
     const fetchData = async () => {
       try {
         const [propsRes, budgetRes, checkRes, scenRes] = await Promise.all([
-          supabase.from('properties').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
-          supabase.from('budget_items').select('*').eq('user_id', user.id),
-          supabase.from('checklist_items').select('*').eq('user_id', user.id).order('sort_order'),
-          supabase.from('mortgage_scenarios').select('*').eq('user_id', user.id).order('created_at', { ascending: false }),
+          supabase.from('properties').select('*').eq('user_id', activeBuyerId).order('created_at', { ascending: false }),
+          supabase.from('budget_items').select('*').eq('user_id', activeBuyerId),
+          supabase.from('checklist_items').select('*').eq('user_id', activeBuyerId).order('sort_order'),
+          supabase.from('mortgage_scenarios').select('*').eq('user_id', activeBuyerId).order('created_at', { ascending: false }),
         ]);
 
         if (propsRes.error) console.error('Dashboard: properties error', propsRes.error);
@@ -57,7 +57,7 @@ export default function DashboardPage() {
     };
 
     fetchData();
-  }, [user, authLoading]);
+  }, [user, authLoading, activeBuyerId]);
 
   const totalIncome = budgetItems.filter((b) => b.is_income).reduce((s, b) => s + b.amount, 0);
   const totalExpenses = budgetItems.filter((b) => !b.is_income).reduce((s, b) => s + b.amount, 0);
@@ -87,8 +87,28 @@ export default function DashboardPage() {
     );
   }
 
+  if (isAdvisor && !activeBuyerId) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold">
+            Welcome{profile?.name ? `, ${profile.name.split(' ')[0]}` : ''}!
+          </h1>
+          <p className="text-muted-foreground">Advisor dashboard</p>
+        </div>
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+            <Building2 className="h-12 w-12 mb-4" />
+            <p className="text-lg font-medium">No buyers linked yet</p>
+            <p className="text-sm">Your clients need to invite you from their Settings page.</p>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   const isEmpty = properties.length === 0 && budgetItems.length === 0 && checklist.length === 0 && scenarios.length === 0;
-  const profileIncomplete = !profile?.income && !profile?.credit_score;
+  const profileIncomplete = !isAdvisor && !profile?.income && !profile?.credit_score;
 
   return (
     <div className="space-y-6">
@@ -100,7 +120,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Getting Started Banner */}
-      {(isEmpty || profileIncomplete) && (
+      {!isAdvisor && (isEmpty || profileIncomplete) && (
         <Card className="border-blue-200 bg-blue-50/50">
           <CardContent className="flex flex-col sm:flex-row items-center gap-4 py-6">
             <div className="flex-shrink-0">
@@ -238,9 +258,11 @@ export default function DashboardPage() {
               <div className="flex flex-col items-center justify-center h-[250px] text-muted-foreground">
                 <Wallet className="h-8 w-8 mb-2" />
                 <p>No budget items yet</p>
-                <Button variant="link" className="mt-1">
-                  <Link href="/budget">Add budget items</Link>
-                </Button>
+                {!isAdvisor && (
+                  <Button variant="link" className="mt-1">
+                    <Link href="/budget">Add budget items</Link>
+                  </Button>
+                )}
               </div>
             )}
             {pieData.length > 0 && (

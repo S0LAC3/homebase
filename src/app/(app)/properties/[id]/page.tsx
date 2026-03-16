@@ -27,7 +27,7 @@ import {
 
 export default function PropertyDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { user, loading: authLoading } = useAuth();
+  const { user, loading: authLoading, activeBuyerId, isAdvisor } = useAuth();
   const router = useRouter();
   const [property, setProperty] = useState<Property | null>(null);
   const [scenarios, setScenarios] = useState<MortgageScenario[]>([]);
@@ -42,7 +42,7 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
 
   useEffect(() => {
     if (authLoading) return;
-    if (!user) {
+    if (!user || !activeBuyerId) {
       setLoading(false);
       return;
     }
@@ -50,8 +50,8 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
     const fetchData = async () => {
       try {
         const [propRes, scenRes] = await Promise.all([
-          supabase.from('properties').select('*').eq('id', id).eq('user_id', user.id).single(),
-          supabase.from('mortgage_scenarios').select('*').eq('property_id', id).eq('user_id', user.id).order('created_at', { ascending: false }),
+          supabase.from('properties').select('*').eq('id', id).eq('user_id', activeBuyerId).single(),
+          supabase.from('mortgage_scenarios').select('*').eq('property_id', id).eq('user_id', activeBuyerId).order('created_at', { ascending: false }),
         ]);
         setProperty(propRes.data);
         setScenarios(scenRes.data ?? []);
@@ -62,10 +62,10 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
       }
     };
     fetchData();
-  }, [user, authLoading, id]);
+  }, [user, authLoading, id, activeBuyerId]);
 
   const handleCalculate = async () => {
-    if (!user || !property) return;
+    if (!user || !property || isAdvisor) return;
     const calc = calculateMortgage({
       loanType: calcForm.loanType,
       purchasePrice: property.price,
@@ -104,7 +104,7 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
   };
 
   const handleDelete = async () => {
-    if (!user || !property) return;
+    if (!user || !property || isAdvisor) return;
     const supabase = createClient();
     await supabase.from('mortgage_scenarios').delete().eq('property_id', property.id);
     await supabase.from('properties').delete().eq('id', property.id);
@@ -159,9 +159,11 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
             {property.address}, {property.city}, {property.state} {property.zip}
           </p>
         </div>
-        <Button variant="destructive" size="sm" onClick={handleDelete}>
-          <Trash2 className="h-4 w-4 mr-1" /> Delete
-        </Button>
+        {!isAdvisor && (
+          <Button variant="destructive" size="sm" onClick={handleDelete}>
+            <Trash2 className="h-4 w-4 mr-1" /> Delete
+          </Button>
+        )}
       </div>
 
       <div className="grid lg:grid-cols-2 gap-6">
@@ -210,6 +212,7 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
                   key={type}
                   size="sm"
                   variant={calcForm.loanType === type ? 'default' : 'outline'}
+                  disabled={isAdvisor}
                   onClick={() => {
                     const dp = type === 'FHA' ? '3.5' : type === 'VA' ? '0' : '5';
                     setCalcForm({ ...calcForm, loanType: type, downPaymentPercent: dp });
@@ -227,19 +230,21 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs">Down Payment %</Label>
-                <Input type="number" step="0.5" value={calcForm.downPaymentPercent} onChange={(e) => setCalcForm({ ...calcForm, downPaymentPercent: e.target.value })} />
+                <Input type="number" step="0.5" value={calcForm.downPaymentPercent} disabled={isAdvisor} onChange={(e) => setCalcForm({ ...calcForm, downPaymentPercent: e.target.value })} />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Interest Rate %</Label>
-                <Input type="number" step="0.125" value={calcForm.interestRate} onChange={(e) => setCalcForm({ ...calcForm, interestRate: e.target.value })} />
+                <Input type="number" step="0.125" value={calcForm.interestRate} disabled={isAdvisor} onChange={(e) => setCalcForm({ ...calcForm, interestRate: e.target.value })} />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Loan Term (years)</Label>
-                <Input type="number" value={calcForm.loanTermYears} onChange={(e) => setCalcForm({ ...calcForm, loanTermYears: e.target.value })} />
+                <Input type="number" value={calcForm.loanTermYears} disabled={isAdvisor} onChange={(e) => setCalcForm({ ...calcForm, loanTermYears: e.target.value })} />
               </div>
             </div>
 
-            <Button className="w-full" onClick={handleCalculate}>Calculate & Save</Button>
+            {!isAdvisor && (
+              <Button className="w-full" onClick={handleCalculate}>Calculate & Save</Button>
+            )}
 
             {scenarios.length > 0 && (
               <div className="space-y-3 mt-4">
