@@ -205,12 +205,66 @@ export default function PropertiesPage() {
 
       {properties.length === 0 ? (
         <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-            <Building2 className="h-12 w-12 mb-4" />
-            <p className="text-lg font-medium">No properties saved yet</p>
-            <p className="text-sm">
-              {isAdvisor ? 'This buyer hasn\'t added any properties yet.' : 'Add your first property to start comparing.'}
+          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="rounded-full bg-muted p-4 mb-4">
+              <Building2 className="h-10 w-10 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-semibold mb-1">No properties saved yet</h3>
+            <p className="text-sm text-muted-foreground mb-6 max-w-sm">
+              {isAdvisor
+                ? "This buyer hasn't added any properties yet. Once they do, you'll see them here."
+                : 'Start by adding your first property to analyze mortgage costs, compare options, and track your search.'}
             </p>
+            {!isAdvisor && (
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogTrigger>
+                  <Button size="lg"><Plus className="mr-2 h-4 w-4" /> Add Your First Property</Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+                  <DialogHeader>
+                    <DialogTitle>Add Property</DialogTitle>
+                  </DialogHeader>
+                  <div className="grid gap-4">
+                    <div className="space-y-2">
+                      <Label>Address *</Label>
+                      <AddressAutocomplete
+                        value={form.address}
+                        onChange={(val) => setForm({ ...form, address: val })}
+                        onSelect={(result) => setForm({ ...form, address: result.address, city: result.city, state: result.state, zip: result.zip })}
+                        placeholder="Start typing an address..."
+                      />
+                    </div>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="space-y-2">
+                        <Label>City</Label>
+                        <Input value={form.city} onChange={(e) => setForm({ ...form, city: e.target.value })} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>State</Label>
+                        <Input value={form.state} onChange={(e) => setForm({ ...form, state: e.target.value })} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>ZIP</Label>
+                        <Input value={form.zip} onChange={(e) => setForm({ ...form, zip: e.target.value })} placeholder="98101" />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-2">
+                        <Label>Price *</Label>
+                        <Input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="750000" />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Sq Ft</Label>
+                        <Input type="number" value={form.sqft} onChange={(e) => setForm({ ...form, sqft: e.target.value })} placeholder="1800" />
+                      </div>
+                    </div>
+                    <Button onClick={handleAdd} disabled={saving}>
+                      {saving ? 'Adding...' : 'Add Property'}
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
+            )}
           </CardContent>
         </Card>
       ) : (

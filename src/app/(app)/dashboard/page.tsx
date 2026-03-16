@@ -120,7 +120,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Getting Started Banner */}
-      {!isAdvisor && (isEmpty || profileIncomplete) && (
+      {!isAdvisor && (isEmpty || profileIncomplete || properties.length === 0) && (
         <Card className="border-blue-200 bg-blue-50/50">
           <CardContent className="flex flex-col sm:flex-row items-center gap-4 py-6">
             <div className="flex-shrink-0">

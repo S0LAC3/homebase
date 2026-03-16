@@ -7,8 +7,11 @@ import { Toaster } from '@/components/ui/sonner';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'HomeBase - Homebuyer Property Analysis & Mortgage Planning',
-  description: 'Your all-in-one homebuying companion. Analyze properties, compare mortgages, track your budget, and manage your homebuying journey.',
+  title: 'HomeBase',
+  description: 'Your homebuying journey, organized.',
+  icons: {
+    icon: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({
@@ -18,6 +21,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+      </head>
       <body className={`${inter.className} antialiased`}>
         <AuthProvider>
           {children}

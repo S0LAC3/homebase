@@ -215,6 +215,26 @@ export default function BudgetPage() {
         </Dialog>
       </div>
 
+      {/* Empty State */}
+      {items.length === 0 && (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="rounded-full bg-muted p-4 mb-4">
+              <Wallet className="h-10 w-10 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-semibold mb-1">No budget items yet</h3>
+            <p className="text-sm text-muted-foreground mb-6 max-w-sm">
+              Add your income and expenses to see how a mortgage payment fits into your monthly budget.
+            </p>
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger>
+                <Button size="lg"><Plus className="mr-2 h-4 w-4" /> Add Your First Item</Button>
+              </DialogTrigger>
+            </Dialog>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Summary Cards */}
       <div className="grid md:grid-cols-3 gap-4">
         <Card>
