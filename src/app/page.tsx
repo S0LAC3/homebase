@@ -62,7 +62,7 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
+    <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="container mx-auto px-4 py-6 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -70,11 +70,9 @@ export default function LandingPage() {
           <span className="font-bold text-xl">HomeBase</span>
         </div>
         {user ? (
-          <Button>
-            <Link href="/dashboard">
-              Go to Dashboard <ArrowRight className="ml-2 h-4 w-4" />
-            </Link>
-          </Button>
+          <Link href="/dashboard">
+            <Button>Go to Dashboard <ArrowRight className="ml-2 h-4 w-4" /></Button>
+          </Link>
         ) : (
           <Button onClick={handleSignIn}>Sign in with Google</Button>
         )}
@@ -83,21 +81,21 @@ export default function LandingPage() {
       {/* Hero */}
       <section className="container mx-auto px-4 py-20 text-center">
         <div className="max-w-3xl mx-auto space-y-6">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-slate-900">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-foreground">
             Your homebuying journey,{' '}
             <span className="text-blue-600">organized</span>
           </h1>
-          <p className="text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto">
+          <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto">
             Track properties, compare mortgage options, manage your budget, and stay on top of
             every step — all in one place. Built with Seattle-area homebuyers in mind.
           </p>
           <div className="flex gap-4 justify-center">
             {user ? (
-              <Button size="lg">
-                <Link href="/dashboard">
+              <Link href="/dashboard">
+                <Button size="lg">
                   Open Dashboard <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
+                </Button>
+              </Link>
             ) : (
               <Button size="lg" onClick={handleSignIn}>
                 Get Started Free <ArrowRight className="ml-2 h-4 w-4" />
@@ -116,10 +114,10 @@ export default function LandingPage() {
           {features.map((feature) => {
             const Icon = feature.icon;
             return (
-              <Card key={feature.title} className="border-slate-200">
+              <Card key={feature.title}>
                 <CardContent className="pt-6">
                   <div className="flex items-start gap-4">
-                    <div className="rounded-lg bg-blue-50 p-2">
+                    <div className="rounded-lg bg-blue-100 dark:bg-blue-950 p-2">
                       <Icon className="h-5 w-5 text-blue-600" />
                     </div>
                     <div>
@@ -143,9 +141,9 @@ export default function LandingPage() {
               Free to use. No credit card required. Built for first-time homebuyers.
             </p>
             {user ? (
-              <Button size="lg" variant="secondary">
-                <Link href="/dashboard">Go to Dashboard</Link>
-              </Button>
+              <Link href="/dashboard">
+                <Button size="lg" variant="secondary">Go to Dashboard</Button>
+              </Link>
             ) : (
               <Button size="lg" variant="secondary" onClick={handleSignIn}>
                 Sign in with Google
