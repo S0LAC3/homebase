@@ -49,5 +49,6 @@ export async function updateSession(request: NextRequest) {
     url.pathname = '/';
     return NextResponse.redirect(url);
   }
+
   return supabaseResponse;
 }
