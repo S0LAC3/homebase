@@ -1,69 +1,44 @@
 /**
- * Confluent Kafka REST Proxy helper.
- * Publishes messages to Confluent Cloud via the Kafka REST API (HTTP).
- * Works in Node.js serverless functions (not edge runtime).
+ * Confluent Kafka helper using kafkajs.
+ * Publishes messages to Confluent Cloud topics.
+ * NOTE: kafkajs does NOT work in Vercel Edge runtime — always use `export const runtime = 'nodejs'`
+ * in any route that imports this module.
  *
  * Required env vars:
- *   CONFLUENT_API_KEY     - Kafka API key (cluster-level)
- *   CONFLUENT_API_SECRET  - Kafka API secret
- *   CONFLUENT_REST_URL    - REST Proxy base URL (optional, defaults to bootstrap-derived URL)
- *   CONFLUENT_CLUSTER_ID  - Kafka cluster ID (optional, auto-discovered if omitted)
+ *   CONFLUENT_API_KEY           - Kafka API key
+ *   CONFLUENT_API_SECRET        - Kafka API secret
+ *   CONFLUENT_BOOTSTRAP_SERVERS - Bootstrap server (default: pkc-n98pk.us-west-2.aws.confluent.cloud:9092)
  */
 
-const CONFLUENT_BASE =
-  process.env.CONFLUENT_REST_URL ??
-  'https://psrc-z27ovke.us-east1.gcp.confluent.cloud';
+import { Kafka, Producer, logLevel } from 'kafkajs';
 
-// Cache cluster ID in-memory across warm lambda invocations
-let _clusterId: string | null = null;
+const kafka = new Kafka({
+  clientId: 'homebase',
+  brokers: [
+    process.env.CONFLUENT_BOOTSTRAP_SERVERS ||
+      'pkc-n98pk.us-west-2.aws.confluent.cloud:9092',
+  ],
+  ssl: true,
+  sasl: {
+    mechanism: 'plain',
+    username: process.env.CONFLUENT_API_KEY || '',
+    password: process.env.CONFLUENT_API_SECRET || '',
+  },
+  logLevel: logLevel.ERROR,
+});
 
-function getAuth(): string {
-  const apiKey = process.env.CONFLUENT_API_KEY;
-  const apiSecret = process.env.CONFLUENT_API_SECRET;
-  if (!apiKey || !apiSecret) {
-    throw new Error('CONFLUENT_API_KEY and CONFLUENT_API_SECRET must be set');
+let producer: Producer | null = null;
+
+async function getProducer(): Promise<Producer> {
+  if (!producer) {
+    producer = kafka.producer();
+    await producer.connect();
   }
-  return Buffer.from(`${apiKey}:${apiSecret}`).toString('base64');
-}
-
-async function getClusterId(): Promise<string> {
-  if (_clusterId) return _clusterId;
-
-  // Allow explicit override via env
-  if (process.env.CONFLUENT_CLUSTER_ID) {
-    _clusterId = process.env.CONFLUENT_CLUSTER_ID;
-    return _clusterId;
-  }
-
-  const res = await fetch(`${CONFLUENT_BASE}/kafka/v3/clusters`, {
-    headers: {
-      Authorization: `Basic ${getAuth()}`,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(
-      `Failed to fetch Confluent cluster list (${res.status}): ${text}`
-    );
-  }
-
-  const json = (await res.json()) as {
-    data?: Array<{ cluster_id: string }>;
-  };
-
-  const id = json.data?.[0]?.cluster_id;
-  if (!id) {
-    throw new Error('No Confluent cluster found in response');
-  }
-
-  _clusterId = id;
-  return id;
+  return producer;
 }
 
 /**
- * Publish a message to a Confluent Kafka topic via REST Proxy.
+ * Publish a message to a Confluent Kafka topic via kafkajs.
  * Silently logs errors (does not throw) to avoid breaking the main cron flow.
  */
 export async function publishToKafka(
@@ -72,33 +47,14 @@ export async function publishToKafka(
   key?: string
 ): Promise<void> {
   try {
-    const clusterId = await getClusterId();
-    const auth = getAuth();
-
-    const url = `${CONFLUENT_BASE}/kafka/v3/clusters/${clusterId}/topics/${topic}/records`;
-
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Basic ${auth}`,
-      },
-      body: JSON.stringify({
-        key: { type: 'STRING', data: key ?? topic },
-        value: { type: 'JSON', data: value },
-      }),
+    const p = await getProducer();
+    await p.send({
+      topic,
+      messages: [{ key: key ?? topic, value: JSON.stringify(value) }],
     });
-
-    if (!res.ok) {
-      const text = await res.text();
-      console.error(
-        `[confluent] Failed to publish to ${topic} (${res.status}): ${text}`
-      );
-    } else {
-      console.log(`[confluent] Published event to ${topic}`);
-    }
-  } catch (err) {
-    // Non-fatal: log and continue — cron must not fail due to Confluent issues
-    console.error(`[confluent] publishToKafka error for ${topic}:`, err);
+    console.log(`[Confluent] Published event to ${topic}`);
+  } catch (error) {
+    console.error('[Confluent] Failed to publish:', error);
+    // Non-fatal - don't crash the cron
   }
 }

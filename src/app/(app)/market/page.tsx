@@ -20,9 +20,28 @@ import {
   Clock,
   BarChart2,
   RefreshCw,
+  ChevronDown,
+  ChevronUp,
+  AlertTriangle,
+  CheckCircle,
 } from 'lucide-react';
+import { FLINK_QUERIES } from '@/lib/flink-queries';
 
 // ─── Types ─────────────────────────────────────────────────────────────────
+
+interface AnomalyNotification {
+  id: string;
+  type: string;
+  title: string;
+  body: string;
+  created_at: string;
+  metadata: {
+    anomaly_type?: string;
+    current_rate?: number;
+    rolling_avg?: number;
+    is_test?: boolean;
+  } | null;
+}
 
 interface MarketDataRow {
   id: string;
@@ -160,6 +179,8 @@ export default function MarketPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
+  const [anomalies, setAnomalies] = useState<AnomalyNotification[]>([]);
+  const [flinkExpanded, setFlinkExpanded] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -177,8 +198,20 @@ export default function MarketPage() {
     }
   };
 
+  const fetchAnomalies = async () => {
+    try {
+      const res = await fetch('/api/notifications?type=anomaly&limit=5');
+      if (!res.ok) return;
+      const json = await res.json() as { notifications?: AnomalyNotification[] };
+      setAnomalies(json.notifications ?? []);
+    } catch {
+      // Non-fatal
+    }
+  };
+
   useEffect(() => {
     fetchData();
+    fetchAnomalies();
   }, []);
 
   const metrics = useMemo(() => {
@@ -379,32 +412,88 @@ export default function MarketPage() {
       {/* Affordability Calculator */}
       <AffordabilityCalc medianPrice={medianHomeValue} />
 
-      {/* Confluent Status Card */}
+      {/* Anomaly Detection Section */}
       <Card className="border-purple-200 bg-purple-50/50 dark:bg-purple-950/20 dark:border-purple-800">
-        <CardContent className="pt-4 pb-4">
-          <div className="flex items-start gap-3">
-            <span className="text-xl">⚡</span>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-semibold text-sm text-purple-800 dark:text-purple-300">
-                  Powered by Confluent
-                </span>
-                <Badge className="bg-purple-100 text-purple-700 border-purple-300 text-xs px-2 py-0 dark:bg-purple-900 dark:text-purple-200">
-                  Kafka Streaming
-                </Badge>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Market data streams via Confluent Kafka — events published to{' '}
-                <code className="font-mono bg-muted px-1 rounded text-xs">market-data-seattle</code>{' '}
-                topic after each weekly cron run.
-              </p>
-              {lastUpdated && (
-                <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
-                  Last event: {lastUpdated}
-                </p>
-              )}
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base flex items-center gap-2 flex-wrap">
+            <span className="text-lg">⚡</span>
+            <span>Anomaly Detection</span>
+            <Badge className="bg-purple-100 text-purple-700 border-purple-300 text-xs px-2 py-0 dark:bg-purple-900 dark:text-purple-200">
+              Powered by Confluent Flink
+            </Badge>
+            <Badge className="bg-purple-50 text-purple-600 border-purple-200 text-xs px-2 py-0 dark:bg-purple-950 dark:text-purple-300">
+              Kafka Streaming
+            </Badge>
+          </CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Confluent Flink monitors mortgage rates and market data in real-time, flagging
+            historically low rates and motivated-seller signals.
+          </p>
+        </CardHeader>
+
+        <CardContent className="space-y-3">
+          {/* Recent Anomalies */}
+          {anomalies.length === 0 ? (
+            <div className="flex items-center gap-2 py-3 text-sm text-muted-foreground">
+              <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
+              No anomalies detected — rates and prices appear normal
             </div>
+          ) : (
+            <div className="space-y-2">
+              {anomalies.map((a) => (
+                <div
+                  key={a.id}
+                  className="flex items-start gap-2 rounded-lg bg-yellow-50 border border-yellow-200 p-3 dark:bg-yellow-950/30 dark:border-yellow-800"
+                >
+                  <AlertTriangle className="h-4 w-4 text-yellow-600 shrink-0 mt-0.5" />
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-yellow-800 dark:text-yellow-200">
+                      {a.title}
+                      {a.metadata?.is_test && (
+                        <span className="ml-1 text-yellow-500">(test)</span>
+                      )}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5">{a.body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* "How it works" collapsible */}
+          <div className="border-t pt-3">
+            <button
+              onClick={() => setFlinkExpanded((v) => !v)}
+              className="flex items-center gap-1 text-xs font-medium text-purple-700 dark:text-purple-300 hover:text-purple-900 transition-colors"
+            >
+              {flinkExpanded ? (
+                <ChevronUp className="h-3.5 w-3.5" />
+              ) : (
+                <ChevronDown className="h-3.5 w-3.5" />
+              )}
+              How it works — Flink SQL
+            </button>
+
+            {flinkExpanded && (
+              <div className="mt-3 space-y-4">
+                {FLINK_QUERIES.map((q) => (
+                  <div key={q.id}>
+                    <p className="text-xs font-semibold text-foreground mb-0.5">{q.title}</p>
+                    <p className="text-xs text-muted-foreground mb-1">{q.description}</p>
+                    <pre className="text-xs bg-muted rounded p-2 overflow-x-auto whitespace-pre-wrap font-mono leading-relaxed">
+                      {q.sql}
+                    </pre>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
+
+          {lastUpdated && (
+            <p className="text-xs text-purple-600 dark:text-purple-400">
+              Last event: {lastUpdated}
+            </p>
+          )}
         </CardContent>
       </Card>
 
