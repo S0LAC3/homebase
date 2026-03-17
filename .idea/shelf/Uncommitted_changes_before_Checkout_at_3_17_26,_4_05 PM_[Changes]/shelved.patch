@@ -1,0 +1,130 @@
+Index: .idea/workspace.xml
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+><?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<project version=\"4\">\n  <component name=\"AutoImportSettings\">\n    <option name=\"autoReloadType\" value=\"SELECTIVE\" />\n  </component>\n  <component name=\"ChangeListManager\">\n    <list default=\"true\" id=\"d0e43bd0-9c87-47b7-8f26-c72b847d11cc\" name=\"Changes\" comment=\"\" />\n    <option name=\"SHOW_DIALOG\" value=\"false\" />\n    <option name=\"HIGHLIGHT_CONFLICTS\" value=\"true\" />\n    <option name=\"HIGHLIGHT_NON_ACTIVE_CHANGELIST\" value=\"false\" />\n    <option name=\"LAST_RESOLUTION\" value=\"IGNORE\" />\n  </component>\n  <component name=\"CopilotPersistence\">\n    <persistenceIdMap>\n      <entry key=\"_/Users/ace/IdeaProjects/homebase\" value=\"3B5hGpQtetOd7MkEBGuQuYH0Q1D\" />\n    </persistenceIdMap>\n  </component>\n  <component name=\"CopilotUserSelectedModel\">\n    <selectedModels>\n      <entry key=\"chat-panel\" value=\"Claude Sonnet 4.6\" />\n      <entry key=\"agent-panel\" value=\"Claude Sonnet 4.6\" />\n    </selectedModels>\n  </component>\n  <component name=\"Git.Settings\">\n    <option name=\"RECENT_GIT_ROOT_PATH\" value=\"$PROJECT_DIR$\" />\n  </component>\n  <component name=\"GitHubPullRequestSearchHistory\"><![CDATA[{\n  \"lastFilter\": {\n    \"state\": \"OPEN\",\n    \"assignee\": \"S0LAC3\"\n  }\n}]]></component>\n  <component name=\"GithubPullRequestsUISettings\"><![CDATA[{\n  \"selectedUrlAndAccountId\": {\n    \"url\": \"https://github.com/S0LAC3/homebase.git\",\n    \"accountId\": \"77f5f2ad-956b-4f04-b259-1c6d7879b366\"\n  }\n}]]></component>\n  <component name=\"KubernetesApiPersistence\"><![CDATA[{}]]></component>\n  <component name=\"KubernetesApiProvider\"><![CDATA[{\n  \"isMigrated\": true\n}]]></component>\n  <component name=\"ProjectColorInfo\"><![CDATA[{\n  \"associatedIndex\": 7\n}]]></component>\n  <component name=\"ProjectId\" id=\"3B5hGpQtetOd7MkEBGuQuYH0Q1D\" />\n  <component name=\"ProjectViewState\">\n    <option name=\"hideEmptyMiddlePackages\" value=\"true\" />\n    <option name=\"showLibraryContents\" value=\"true\" />\n  </component>\n  <component name=\"PropertiesComponent\"><![CDATA[{\n  \"keyToString\": {\n    \"ModuleVcsDetector.initialDetectionPerformed\": \"true\",\n    \"RunOnceActivity.ShowReadmeOnStart\": \"true\",\n    \"RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252\": \"true\",\n    \"RunOnceActivity.git.unshallow\": \"true\",\n    \"git-widget-placeholder\": \"Codex-Changes\",\n    \"js.debugger.nextJs.config.created.client\": \"true\",\n    \"js.debugger.nextJs.config.created.server\": \"true\",\n    \"kotlin-language-version-configured\": \"true\",\n    \"node.js.detected.package.eslint\": \"true\",\n    \"node.js.detected.package.tslint\": \"true\",\n    \"node.js.selected.package.eslint\": \"(autodetect)\",\n    \"node.js.selected.package.tslint\": \"(autodetect)\",\n    \"nodejs_package_manager_path\": \"npm\",\n    \"settings.editor.selected.configurable\": \"vcs.Git\",\n    \"ts.external.directory.path\": \"/Users/ace/IdeaProjects/homebase/node_modules/typescript/lib\",\n    \"vue.rearranger.settings.migration\": \"true\"\n  }\n}]]></component>\n  <component name=\"RunManager\" selected=\"npm.Next.js: server-side\">\n    <configuration name=\"Next.js: debug client-side\" type=\"JavascriptDebugType\" uri=\"http://localhost:3000/\">\n      <method v=\"2\" />\n    </configuration>\n    <configuration name=\"Next.js: server-side\" type=\"js.build_tools.npm\">\n      <package-json value=\"$PROJECT_DIR$/package.json\" />\n      <command value=\"run\" />\n      <scripts>\n        <script value=\"dev\" />\n      </scripts>\n      <node-interpreter value=\"project\" />\n      <envs />\n      <method v=\"2\" />\n    </configuration>\n  </component>\n  <component name=\"SharedIndexes\">\n    <attachedChunks>\n      <set>\n        <option value=\"bundled-jdk-9823dce3aa75-bf35d07a577b-intellij.indexing.shared.core-IU-252.23892.409\" />\n        <option value=\"bundled-js-predefined-d6986cc7102b-e03c56caf84a-JavaScript-IU-252.23892.409\" />\n      </set>\n    </attachedChunks>\n  </component>\n  <component name=\"TaskManager\">\n    <task active=\"true\" id=\"Default\" summary=\"Default task\">\n      <changelist id=\"d0e43bd0-9c87-47b7-8f26-c72b847d11cc\" name=\"Changes\" comment=\"\" />\n      <created>1773784745272</created>\n      <option name=\"number\" value=\"Default\" />\n      <option name=\"presentableId\" value=\"Default\" />\n      <updated>1773784745272</updated>\n      <workItem from=\"1773784746335\" duration=\"3079000\" />\n    </task>\n    <servers />\n  </component>\n  <component name=\"TypeScriptGeneratedFilesManager\">\n    <option name=\"version\" value=\"3\" />\n  </component>\n  <component name=\"UnknownFeatures\">\n    <option featureType=\"dependencySupport\" implementationName=\"javascript:npm:react\" />\n    <option featureType=\"dependencySupport\" implementationName=\"javascript:npm:kafkajs\" />\n    <option featureType=\"dependencySupport\" implementationName=\"executable:docker\" />\n    <option featureType=\"dependencySupport\" implementationName=\"javascript:npm:tailwindcss\" />\n    <option featureType=\"dependencySupport\" implementationName=\"executable:podman\" />\n    <option featureType=\"dependencySupport\" implementationName=\"executable:kubectl\" />\n    <option featureType=\"dependencySupport\" implementationName=\"executable:az\" />\n    <option featureType=\"dependencySupport\" implementationName=\"javascript:npm:next\" />\n    <option featureType=\"dependencySupport\" implementationName=\"executable:terraform\" />\n  </component>\n  <component name=\"Vcs.Log.Tabs.Properties\">\n    <option name=\"TAB_STATES\">\n      <map>\n        <entry key=\"MAIN\">\n          <value>\n            <State />\n          </value>\n        </entry>\n      </map>\n    </option>\n  </component>\n  <component name=\"XSLT-Support.FileAssociations.UIState\">\n    <expand />\n    <select />\n  </component>\n  <component name=\"github-copilot-workspace\">\n    <instructionFileLocations>\n      <option value=\".github/instructions\" />\n    </instructionFileLocations>\n    <promptFileLocations>\n      <option value=\".github/prompts\" />\n    </promptFileLocations>\n  </component>\n</project>
+===================================================================
+diff --git a/.idea/workspace.xml b/.idea/workspace.xml
+--- a/.idea/workspace.xml	(revision a9792ffeaef013abaa542eef444765dd70c90f0f)
++++ b/.idea/workspace.xml	(date 1773788585984)
+@@ -4,7 +4,9 @@
+     <option name="autoReloadType" value="SELECTIVE" />
+   </component>
+   <component name="ChangeListManager">
+-    <list default="true" id="d0e43bd0-9c87-47b7-8f26-c72b847d11cc" name="Changes" comment="" />
++    <list default="true" id="d0e43bd0-9c87-47b7-8f26-c72b847d11cc" name="Changes" comment="">
++      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
++    </list>
+     <option name="SHOW_DIALOG" value="false" />
+     <option name="HIGHLIGHT_CONFLICTS" value="true" />
+     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+@@ -17,57 +19,61 @@
+   </component>
+   <component name="CopilotUserSelectedModel">
+     <selectedModels>
+-      <entry key="chat-panel" value="Claude Sonnet 4.6" />
+-      <entry key="agent-panel" value="Claude Sonnet 4.6" />
++      <entry key="chat-panel" value="GPT-5.3-Codex" />
++      <entry key="agent-panel" value="GPT-5.3-Codex" />
+     </selectedModels>
+   </component>
+   <component name="Git.Settings">
++    <option name="RECENT_BRANCH_BY_REPOSITORY">
++      <map>
++        <entry key="$PROJECT_DIR$" value="Codex-Changes" />
++      </map>
++    </option>
+     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+   </component>
+-  <component name="GitHubPullRequestSearchHistory"><![CDATA[{
+-  "lastFilter": {
+-    "state": "OPEN",
+-    "assignee": "S0LAC3"
++  <component name="GitHubPullRequestSearchHistory">{
++  &quot;lastFilter&quot;: {
++    &quot;state&quot;: &quot;OPEN&quot;,
++    &quot;assignee&quot;: &quot;S0LAC3&quot;
+   }
+-}]]></component>
+-  <component name="GithubPullRequestsUISettings"><![CDATA[{
+-  "selectedUrlAndAccountId": {
+-    "url": "https://github.com/S0LAC3/homebase.git",
+-    "accountId": "77f5f2ad-956b-4f04-b259-1c6d7879b366"
++}</component>
++  <component name="GithubPullRequestsUISettings">{
++  &quot;selectedUrlAndAccountId&quot;: {
++    &quot;url&quot;: &quot;https://github.com/S0LAC3/homebase.git&quot;,
++    &quot;accountId&quot;: &quot;77f5f2ad-956b-4f04-b259-1c6d7879b366&quot;
+   }
+-}]]></component>
+-  <component name="KubernetesApiPersistence"><![CDATA[{}]]></component>
+-  <component name="KubernetesApiProvider"><![CDATA[{
+-  "isMigrated": true
+-}]]></component>
+-  <component name="ProjectColorInfo"><![CDATA[{
+-  "associatedIndex": 7
+-}]]></component>
++}</component>
++  <component name="KubernetesApiPersistence">{}</component>
++  <component name="KubernetesApiProvider">{
++  &quot;isMigrated&quot;: true
++}</component>
++  <component name="ProjectColorInfo">{
++  &quot;associatedIndex&quot;: 7
++}</component>
+   <component name="ProjectId" id="3B5hGpQtetOd7MkEBGuQuYH0Q1D" />
+   <component name="ProjectViewState">
+     <option name="hideEmptyMiddlePackages" value="true" />
+     <option name="showLibraryContents" value="true" />
+   </component>
+-  <component name="PropertiesComponent"><![CDATA[{
+-  "keyToString": {
+-    "ModuleVcsDetector.initialDetectionPerformed": "true",
+-    "RunOnceActivity.ShowReadmeOnStart": "true",
+-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
+-    "RunOnceActivity.git.unshallow": "true",
+-    "git-widget-placeholder": "Codex-Changes",
+-    "js.debugger.nextJs.config.created.client": "true",
+-    "js.debugger.nextJs.config.created.server": "true",
+-    "kotlin-language-version-configured": "true",
+-    "node.js.detected.package.eslint": "true",
+-    "node.js.detected.package.tslint": "true",
+-    "node.js.selected.package.eslint": "(autodetect)",
+-    "node.js.selected.package.tslint": "(autodetect)",
+-    "nodejs_package_manager_path": "npm",
+-    "settings.editor.selected.configurable": "vcs.Git",
+-    "ts.external.directory.path": "/Users/ace/IdeaProjects/homebase/node_modules/typescript/lib",
+-    "vue.rearranger.settings.migration": "true"
++  <component name="PropertiesComponent">{
++  &quot;keyToString&quot;: {
++    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
++    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
++    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
++    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
++    &quot;js.debugger.nextJs.config.created.client&quot;: &quot;true&quot;,
++    &quot;js.debugger.nextJs.config.created.server&quot;: &quot;true&quot;,
++    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
++    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
++    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
++    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
++    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
++    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
++    &quot;settings.editor.selected.configurable&quot;: &quot;vcs.Git&quot;,
++    &quot;ts.external.directory.path&quot;: &quot;/Applications/IntelliJ IDEA.app/Contents/plugins/javascript-plugin/jsLanguageServicesImpl/external&quot;,
++    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+   }
+-}]]></component>
++}</component>
+   <component name="RunManager" selected="npm.Next.js: server-side">
+     <configuration name="Next.js: debug client-side" type="JavascriptDebugType" uri="http://localhost:3000/">
+       <method v="2" />
+@@ -98,7 +104,9 @@
+       <option name="number" value="Default" />
+       <option name="presentableId" value="Default" />
+       <updated>1773784745272</updated>
+-      <workItem from="1773784746335" duration="3079000" />
++      <workItem from="1773784746335" duration="3661000" />
++      <workItem from="1773788424084" duration="10000" />
++      <workItem from="1773788437986" duration="148000" />
+     </task>
+     <servers />
+   </component>
