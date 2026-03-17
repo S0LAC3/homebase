@@ -27,6 +27,7 @@ import {
   TrendingUp,
   Sun,
   Moon,
+  Search,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useTheme } from 'next-themes';
@@ -35,6 +36,7 @@ import { NotificationBell } from '@/components/notification-bell';
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/properties', label: 'Properties', icon: Building2 },
+  { href: '/browse', label: 'Browse', icon: Search },
   { href: '/calculator', label: 'Calculator', icon: Calculator },
   { href: '/rent-vs-buy', label: 'Rent vs Buy', icon: Scale },
   { href: '/market', label: 'Market', icon: TrendingUp },

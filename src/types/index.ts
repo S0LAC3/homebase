@@ -1,3 +1,11 @@
+export interface SearchPrefs {
+  min_price?: number;
+  max_price?: number;
+  city?: string;
+  min_beds?: number;
+  min_baths?: number;
+}
+
 export interface Profile {
   id: string;
   email: string;
@@ -8,6 +16,7 @@ export interface Profile {
   monthly_debt: number | null;
   savings: number | null;
   target_location: string | null;
+  search_prefs: SearchPrefs | null;
   created_at: string;
 }
 

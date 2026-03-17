@@ -11,12 +11,19 @@ import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Building2, MapPin, Bed, Bath, Ruler, ExternalLink } from 'lucide-react';
+import { Plus, Building2, MapPin, Bed, Bath, Ruler, ExternalLink, X, SlidersHorizontal } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatCurrency, KING_COUNTY_PROPERTY_TAX_RATE } from '@/lib/mortgage';
 import { AddressAutocomplete } from '@/components/address-autocomplete';
 import type { Property } from '@/types';
 import Link from 'next/link';
+
+const FILTER_STORAGE_KEY = 'homebase_property_filters';
+
+interface PriceFilter {
+  minPrice: string;
+  maxPrice: string;
+}
 
 export default function PropertiesPage() {
   const { user, loading: authLoading, activeBuyerId, isAdvisor } = useAuth();
@@ -25,11 +32,34 @@ export default function PropertiesPage() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  const [filter, setFilter] = useState<PriceFilter>({ minPrice: '', maxPrice: '' });
+
   const [form, setForm] = useState({
     address: '', city: 'Seattle', state: 'WA', zip: '', price: '',
     sqft: '', bedrooms: '', bathrooms: '', hoa_monthly: '',
     property_tax_annual: '', year_built: '', listing_url: '', notes: '',
   });
+
+  // Load filters from localStorage on mount
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(FILTER_STORAGE_KEY);
+      if (saved) {
+        setFilter(JSON.parse(saved));
+      }
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  // Persist filters to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem(FILTER_STORAGE_KEY, JSON.stringify(filter));
+    } catch {
+      // ignore
+    }
+  }, [filter]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -101,6 +131,18 @@ export default function PropertiesPage() {
     }
     setSaving(false);
   };
+
+  const clearFilters = () => {
+    setFilter({ minPrice: '', maxPrice: '' });
+  };
+
+  const hasActiveFilters = filter.minPrice !== '' || filter.maxPrice !== '';
+
+  const filteredProperties = properties.filter((p) => {
+    if (filter.minPrice !== '' && p.price < parseFloat(filter.minPrice)) return false;
+    if (filter.maxPrice !== '' && p.price > parseFloat(filter.maxPrice)) return false;
+    return true;
+  });
 
   if (loading) {
     return (
@@ -204,6 +246,56 @@ export default function PropertiesPage() {
         )}
       </div>
 
+      {/* Price filter bar */}
+      {properties.length > 0 && (
+        <Card>
+          <CardContent className="py-4">
+            <div className="flex flex-wrap items-end gap-4">
+              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <SlidersHorizontal className="h-4 w-4" />
+                Filter by price
+              </div>
+              <div className="flex items-end gap-2 flex-wrap flex-1">
+                <div className="space-y-1">
+                  <Label className="text-xs">Min Price ($)</Label>
+                  <Input
+                    type="number"
+                    placeholder="No min"
+                    value={filter.minPrice}
+                    onChange={(e) => setFilter({ ...filter, minPrice: e.target.value })}
+                    className="w-36 h-8 text-sm"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Max Price ($)</Label>
+                  <Input
+                    type="number"
+                    placeholder="No max"
+                    value={filter.maxPrice}
+                    onChange={(e) => setFilter({ ...filter, maxPrice: e.target.value })}
+                    className="w-36 h-8 text-sm"
+                  />
+                </div>
+                {hasActiveFilters && (
+                  <Button variant="ghost" size="sm" onClick={clearFilters} className="h-8 text-xs">
+                    <X className="h-3 w-3 mr-1" /> Clear filters
+                  </Button>
+                )}
+              </div>
+              <div className="text-sm text-muted-foreground whitespace-nowrap">
+                {hasActiveFilters ? (
+                  <span>
+                    <span className="font-medium text-foreground">{filteredProperties.length}</span> of {properties.length} properties
+                  </span>
+                ) : (
+                  <span>{properties.length} {properties.length === 1 ? 'property' : 'properties'}</span>
+                )}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {properties.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-16 text-center">
@@ -268,9 +360,24 @@ export default function PropertiesPage() {
             )}
           </CardContent>
         </Card>
+      ) : filteredProperties.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="rounded-full bg-muted p-4 mb-4">
+              <SlidersHorizontal className="h-10 w-10 text-muted-foreground" />
+            </div>
+            <h3 className="text-lg font-semibold mb-1">No properties in this price range</h3>
+            <p className="text-sm text-muted-foreground mb-4 max-w-sm">
+              Try adjusting your min/max price filters to see more results.
+            </p>
+            <Button variant="outline" onClick={clearFilters}>
+              <X className="h-4 w-4 mr-2" /> Clear filters
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {properties.map((property) => (
+          {filteredProperties.map((property) => (
             <Link key={property.id} href={`/properties/${property.id}`}>
               <Card className="hover:shadow-md transition-shadow cursor-pointer h-full">
                 <CardHeader className="pb-2">
