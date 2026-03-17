@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import type { User } from '@supabase/supabase-js';
+import type { Session, User } from '@supabase/supabase-js';
 import type { Profile } from '@/types';
 
 interface BuyerInfo {
@@ -88,39 +88,66 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  useEffect(() => {
-    // Use onAuthStateChange as the single source of truth.
-    // INITIAL_SESSION fires immediately with the current session (or null).
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        const currentUser = session?.user ?? null;
-        setUser(currentUser);
-        if (currentUser) {
-          try {
-            const prof = await fetchProfile(currentUser.id);
-            if (prof?.role === 'advisor') {
-              const buyers = await fetchLinkedBuyers(currentUser.id);
-              setLinkedBuyers(buyers);
-              if (buyers.length > 0) {
-                setActiveBuyerIdState((prev) => prev ?? buyers[0].id);
-              }
-            } else {
-              setLinkedBuyers([]);
-              setActiveBuyerIdState(null);
-            }
-          } catch (error) {
-            console.error('Auth: failed to fetch profile', error);
-          }
+  const hydrateFromSession = async (session: Session | null) => {
+    const currentUser = session?.user ?? null;
+    setUser(currentUser);
+
+    if (!currentUser) {
+      setProfile(null);
+      setLinkedBuyers([]);
+      setActiveBuyerIdState(null);
+      return;
+    }
+
+    try {
+      const prof = await fetchProfile(currentUser.id);
+      if (prof?.role === 'advisor') {
+        const buyers = await fetchLinkedBuyers(currentUser.id);
+        setLinkedBuyers(buyers);
+        if (buyers.length > 0) {
+          setActiveBuyerIdState((prev) => prev ?? buyers[0].id);
         } else {
-          setProfile(null);
-          setLinkedBuyers([]);
           setActiveBuyerIdState(null);
         }
-        setLoading(false);
+      } else {
+        setLinkedBuyers([]);
+        setActiveBuyerIdState(null);
+      }
+    } catch (error) {
+      console.error('Auth: failed to fetch profile', error);
+    }
+  };
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const init = async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) {
+          console.error('Auth: session fetch error', error.message);
+        }
+        if (!isMounted) return;
+        await hydrateFromSession(data.session ?? null);
+      } finally {
+        if (isMounted) setLoading(false);
+      }
+    };
+
+    init();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        if (!isMounted) return;
+        await hydrateFromSession(session);
+        if (isMounted) setLoading(false);
       }
     );
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

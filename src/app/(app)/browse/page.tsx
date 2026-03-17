@@ -171,21 +171,37 @@ export default function BrowsePage() {
   });
 
   useEffect(() => {
-    if (authLoading || !user) return;
+    if (authLoading) return;
+    if (!user) {
+      setProfileLoading(false);
+      return;
+    }
+
     const supabase = createClient();
-    supabase
-      .from('profiles')
-      .select('search_prefs, income, monthly_debt')
-      .eq('id', user.id)
-      .single()
-      .then(({ data }) => {
+    const fetchProfile = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('search_prefs, income, monthly_debt')
+          .eq('id', user.id)
+          .single();
+
+        if (error) {
+          console.error('Browse: profile fetch error', error);
+          return;
+        }
+
         if (data?.search_prefs) {
           setPrefs((p) => ({ ...p, ...data.search_prefs }));
         }
         if (data?.income) setIncome(data.income);
         if (data?.monthly_debt) setMonthlyDebt(data.monthly_debt);
+      } finally {
         setProfileLoading(false);
-      });
+      }
+    };
+
+    fetchProfile();
   }, [user, authLoading]);
 
   const handleSave = async () => {
