@@ -23,6 +23,7 @@ import {
   Settings,
   LogOut,
   Menu,
+  Scale,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -30,6 +31,7 @@ const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/properties', label: 'Properties', icon: Building2 },
   { href: '/calculator', label: 'Calculator', icon: Calculator },
+  { href: '/rent-vs-buy', label: 'Rent vs Buy', icon: Scale },
   { href: '/budget', label: 'Budget', icon: Wallet },
   { href: '/checklist', label: 'Checklist', icon: CheckSquare },
   { href: '/settings', label: 'Settings', icon: Settings },
