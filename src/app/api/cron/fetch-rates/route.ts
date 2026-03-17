@@ -12,8 +12,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { fetchLatestRates } from '@/lib/fetch-rates';
+import { publishToKafka } from '@/lib/confluent';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
@@ -143,11 +144,14 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  // CONFLUENT HOOK: In the full integration, publish the rate event here:
-  // await confluentProducer.produce('mortgage-rates', {
-  //   key: rates.date,
-  //   value: { rate30yr: rates.rate30yr, rateFHA: rates.rateFHA, date: rates.date },
-  // });
+  // Publish rate event to Confluent Kafka
+  await publishToKafka('mortgage-rates', {
+    date: rates.date,
+    rate_30yr_fixed: rates.rate30yr,
+    rate_fha: rates.rateFHA,
+    source: 'FRED',
+    timestamp: new Date().toISOString(),
+  }, rates.date);
 
   return NextResponse.json({
     success: true,

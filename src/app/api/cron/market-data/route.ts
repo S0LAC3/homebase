@@ -14,8 +14,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { publishToKafka } from '@/lib/confluent';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 const FRED_BASE = 'https://api.stlouisfed.org/fred/series/observations';
@@ -87,23 +88,32 @@ export async function GET(request: NextRequest) {
   const upserted: string[] = [];
   const errors: string[] = [];
 
+  // Track fetched metric values for Confluent publish
+  const fetchedMetrics: Record<string, number | null> = {
+    median_home_value: null,
+    median_list_price: null,
+    days_on_market: null,
+    monthly_supply: null,
+  };
+
   // 1. Zillow Home Value Index — Seattle MSA median home value
   try {
     const hvi = await fetchZillowHVI();
     if (hvi) {
+      const value = Math.round(hvi.value);
       const { error } = await supabase.from('market_data').upsert(
         {
           data_date: hvi.date,
           metro: 'Seattle-Tacoma-Bellevue',
           metric_name: 'median_home_value',
-          metric_value: Math.round(hvi.value),
+          metric_value: value,
           metric_unit: 'USD',
           source: 'Zillow Research',
         },
         { onConflict: 'data_date,metro,metric_name' }
       );
       if (error) errors.push(`Zillow HVI: ${error.message}`);
-      else upserted.push('median_home_value');
+      else { upserted.push('median_home_value'); fetchedMetrics.median_home_value = value; }
     }
   } catch (e) {
     errors.push(`Zillow HVI fetch error: ${String(e)}`);
@@ -114,19 +124,20 @@ export async function GET(request: NextRequest) {
     const obs = await fetchFredSeries('MEDLISPRI47900');
     if (obs.length > 0) {
       const o = obs[0];
+      const value = parseFloat(o.value) * 1000; // FRED stores in $thousands
       const { error } = await supabase.from('market_data').upsert(
         {
           data_date: o.date,
           metro: 'Seattle-Tacoma-Bellevue',
           metric_name: 'median_list_price',
-          metric_value: parseFloat(o.value) * 1000, // FRED stores in $thousands
+          metric_value: value,
           metric_unit: 'USD',
           source: 'FRED / Realtor.com',
         },
         { onConflict: 'data_date,metro,metric_name' }
       );
       if (error) errors.push(`median_list_price: ${error.message}`);
-      else upserted.push('median_list_price');
+      else { upserted.push('median_list_price'); fetchedMetrics.median_list_price = value; }
     }
   } catch (e) {
     errors.push(`FRED median list price error: ${String(e)}`);
@@ -137,19 +148,20 @@ export async function GET(request: NextRequest) {
     const obs = await fetchFredSeries('MEDDAYONMARNM');
     if (obs.length > 0) {
       const o = obs[0];
+      const value = parseFloat(o.value);
       const { error } = await supabase.from('market_data').upsert(
         {
           data_date: o.date,
           metro: 'Seattle-Tacoma-Bellevue',
           metric_name: 'days_on_market',
-          metric_value: parseFloat(o.value),
+          metric_value: value,
           metric_unit: 'days',
           source: 'FRED / Realtor.com (national proxy)',
         },
         { onConflict: 'data_date,metro,metric_name' }
       );
       if (error) errors.push(`days_on_market: ${error.message}`);
-      else upserted.push('days_on_market');
+      else { upserted.push('days_on_market'); fetchedMetrics.days_on_market = value; }
     }
   } catch (e) {
     errors.push(`FRED days on market error: ${String(e)}`);
@@ -175,11 +187,30 @@ export async function GET(request: NextRequest) {
         { onConflict: 'data_date,metro,metric_name' }
       );
       if (error) errors.push(`monthly_supply: ${error.message}`);
-      else upserted.push('monthly_supply');
+      else { upserted.push('monthly_supply'); fetchedMetrics.monthly_supply = Math.round(monthlySupply * 10) / 10; }
     }
   } catch (e) {
     errors.push(`FRED active listings error: ${String(e)}`);
   }
+
+  // Publish market data event to Confluent Kafka
+  const today = new Date().toISOString().split('T')[0];
+  await publishToKafka(
+    'market-data-seattle',
+    {
+      date: today,
+      metrics: {
+        median_home_value: fetchedMetrics.median_home_value,
+        median_list_price: fetchedMetrics.median_list_price,
+        days_on_market: fetchedMetrics.days_on_market,
+        monthly_supply: fetchedMetrics.monthly_supply,
+      },
+      metro: 'Seattle-Tacoma-Bellevue',
+      upserted,
+      timestamp: new Date().toISOString(),
+    },
+    today
+  );
 
   return NextResponse.json({
     success: errors.length === 0,

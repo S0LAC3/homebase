@@ -379,6 +379,35 @@ export default function MarketPage() {
       {/* Affordability Calculator */}
       <AffordabilityCalc medianPrice={medianHomeValue} />
 
+      {/* Confluent Status Card */}
+      <Card className="border-purple-200 bg-purple-50/50 dark:bg-purple-950/20 dark:border-purple-800">
+        <CardContent className="pt-4 pb-4">
+          <div className="flex items-start gap-3">
+            <span className="text-xl">⚡</span>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="font-semibold text-sm text-purple-800 dark:text-purple-300">
+                  Powered by Confluent
+                </span>
+                <Badge className="bg-purple-100 text-purple-700 border-purple-300 text-xs px-2 py-0 dark:bg-purple-900 dark:text-purple-200">
+                  Kafka Streaming
+                </Badge>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Market data streams via Confluent Kafka — events published to{' '}
+                <code className="font-mono bg-muted px-1 rounded text-xs">market-data-seattle</code>{' '}
+                topic after each weekly cron run.
+              </p>
+              {lastUpdated && (
+                <p className="text-xs text-purple-600 dark:text-purple-400 mt-1">
+                  Last event: {lastUpdated}
+                </p>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Data freshness note */}
       <div className="text-xs text-muted-foreground text-center pb-2">
         Data sourced from Zillow Research &amp; Federal Reserve FRED. Updated weekly.
