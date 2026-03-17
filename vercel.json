@@ -1,6 +1,7 @@
 {
   "crons": [
     {"path": "/api/cron/fetch-rates", "schedule": "0 9 * * 1"},
-    {"path": "/api/cron/market-data", "schedule": "0 10 * * 1"}
+    {"path": "/api/cron/market-data", "schedule": "0 10 * * 1"},
+    {"path": "/api/cron/consume-anomalies", "schedule": "*/5 * * * *"}
   ]
 }
