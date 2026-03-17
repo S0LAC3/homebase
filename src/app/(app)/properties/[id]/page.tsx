@@ -215,7 +215,7 @@ export default function PropertyDetailPage({ params }: { params: Promise<{ id: s
                   variant={calcForm.loanType === type ? 'default' : 'outline'}
                   disabled={isAdvisor}
                   onClick={() => {
-                    const dp = type === 'FHA' ? '3.5' : type === 'VA' ? '0' : '5';
+                    const dp = type === 'FHA' ? '3.5' : type === 'VA' ? '0' : '20';
                     setCalcForm({ ...calcForm, loanType: type, downPaymentPercent: dp });
                   }}
                 >

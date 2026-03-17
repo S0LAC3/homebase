@@ -40,7 +40,6 @@ export default function CalculatorPage() {
 
     const configs: { type: LoanType; dp: number; label?: string }[] = [
       { type: 'FHA', dp: FHA_DOWN_PAYMENT_PERCENT },
-      { type: 'Conventional', dp: 5 },
       { type: 'Conventional', dp: 20 },
       { type: 'VA', dp: 0 },
     ];
@@ -202,7 +201,7 @@ export default function CalculatorPage() {
               <CardContent className="flex flex-col items-center justify-center py-16 text-muted-foreground">
                 <Calculator className="h-12 w-12 mb-4" />
                 <p className="text-lg font-medium">Enter a price and compare loans</p>
-                <p className="text-sm">We&apos;ll show FHA, Conventional (5% & 20%), and VA side by side.</p>
+                <p className="text-sm">We&apos;ll show FHA (3.5%), Conventional (20%), and VA (0%) side by side.</p>
               </CardContent>
             </Card>
           )}
