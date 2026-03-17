@@ -19,7 +19,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar userName={profile?.name} userEmail={user.email} />
+      <Navbar userName={profile?.name} userEmail={user.email} userId={user.id} />
       <AdvisorBanner />
       <main className="container mx-auto px-4 py-6">{children}</main>
     </div>

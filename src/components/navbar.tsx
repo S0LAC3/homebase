@@ -24,23 +24,26 @@ import {
   LogOut,
   Menu,
   Scale,
+  TrendingUp,
   Sun,
   Moon,
 } from 'lucide-react';
 import { useState } from 'react';
 import { useTheme } from 'next-themes';
+import { NotificationBell } from '@/components/notification-bell';
 
 const navItems = [
   { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/properties', label: 'Properties', icon: Building2 },
   { href: '/calculator', label: 'Calculator', icon: Calculator },
   { href: '/rent-vs-buy', label: 'Rent vs Buy', icon: Scale },
+  { href: '/market', label: 'Market', icon: TrendingUp },
   { href: '/budget', label: 'Budget', icon: Wallet },
   { href: '/checklist', label: 'Checklist', icon: CheckSquare },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
-export function Navbar({ userName, userEmail }: { userName?: string | null; userEmail?: string | null }) {
+export function Navbar({ userName, userEmail, userId }: { userName?: string | null; userEmail?: string | null; userId?: string | null }) {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -88,6 +91,7 @@ export function Navbar({ userName, userEmail }: { userName?: string | null; user
         </nav>
 
         <div className="flex items-center gap-2 ml-auto">
+          {userId && <NotificationBell userId={userId} />}
           <Button
             variant="ghost"
             size="icon"
