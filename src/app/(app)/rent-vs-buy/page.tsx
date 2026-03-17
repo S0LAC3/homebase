@@ -10,7 +10,7 @@ import {
   ResponsiveContainer, Legend, ReferenceLine,
   BarChart, Bar,
 } from 'recharts';
-import { Home, ChevronDown, ChevronUp, TrendingUp, DollarSign } from 'lucide-react';
+import { Home, ChevronDown, ChevronUp, TrendingUp, DollarSign, AlertTriangle, Wallet } from 'lucide-react';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -35,11 +35,13 @@ interface Inputs {
   propertyTaxPct: number;
   // Financial
   totalAvailableCash: number;
-  monthlyInvestRenter: number;
-  monthlyInvestFHA: number;
-  monthlyInvestConv: number;
   investmentRoi: number;
-  // Tax
+  // Income & Taxes
+  annualSalary: number;
+  taxRatePct: number;
+  monthlyFixedRenting: number; // ALL renting expenses including rent
+  monthlyFixedBuying: number;  // non-housing expenses when buying
+  // Capital Gains Tax
   filingStatus: 'single' | 'married';
   capGainsRatePct: number;
 }
@@ -108,13 +110,18 @@ function simulate(inputs: Inputs): SimResult {
     mortgageRate, loanTermYears, extraMonthlyPrincipal,
     monthlyRent, rentIncreasePct, monthlyRentersInsurance,
     maintenancePct, monthlyHoa, monthlyInsurance, propertyTaxPct,
-    totalAvailableCash, monthlyInvestRenter, monthlyInvestFHA, monthlyInvestConv,
-    investmentRoi, filingStatus, capGainsRatePct,
+    totalAvailableCash, investmentRoi,
+    annualSalary, taxRatePct, monthlyFixedRenting, monthlyFixedBuying,
+    filingStatus, capGainsRatePct,
   } = inputs;
 
   const exclusion = filingStatus === 'married' ? 500_000 : 250_000;
   const monthlyROI = investmentRoi / 100 / 12;
   const monthlyRate = mortgageRate / 100 / 12;
+  const monthlyNetIncome = annualSalary / 12 * (1 - taxRatePct / 100);
+
+  // Fixed monthly investment for rent scenario (constant — rent increases are in monthlyRent)
+  const rentMonthlyAvailable = monthlyNetIncome - monthlyFixedRenting;
 
   // FHA setup
   const fhaDown = homePrice * 0.035;
@@ -158,8 +165,9 @@ function simulate(inputs: Inputs): SimResult {
       fhaMIPCost = fhaMonthlyMIP;
       if (fhaBalance === 0 && fhaPayoffMonth === null) fhaPayoffMonth = m;
     }
-    const fhaMonthly = fhaPICost + fhaMIPCost + propTax + maintenance + monthlyHoa + monthlyInsurance;
-    fhaInvestable = fhaInvestable * (1 + monthlyROI) + monthlyInvestFHA;
+    const fhaMonthlyHousing = fhaPICost + fhaMIPCost + propTax + maintenance + monthlyHoa + monthlyInsurance;
+    const fhaMonthlyAvailable = monthlyNetIncome - monthlyFixedBuying - fhaMonthlyHousing;
+    fhaInvestable = fhaInvestable * (1 + monthlyROI) + Math.max(0, fhaMonthlyAvailable);
 
     // Compute FHA net worth
     const fhaGain = homeValue - homePrice;
@@ -177,8 +185,9 @@ function simulate(inputs: Inputs): SimResult {
       convPICost = convPandI + (convBalance > 0 ? extraMonthlyPrincipal : 0);
       if (convBalance === 0 && convPayoffMonth === null) convPayoffMonth = m;
     }
-    const convMonthly = convPICost + propTax + maintenance + monthlyHoa + monthlyInsurance;
-    convInvestable = convInvestable * (1 + monthlyROI) + monthlyInvestConv;
+    const convMonthlyHousing = convPICost + propTax + maintenance + monthlyHoa + monthlyInsurance;
+    const convMonthlyAvailable = monthlyNetIncome - monthlyFixedBuying - convMonthlyHousing;
+    convInvestable = convInvestable * (1 + monthlyROI) + Math.max(0, convMonthlyAvailable);
 
     // Compute Conv net worth
     const convGain = homeValue - homePrice;
@@ -190,13 +199,15 @@ function simulate(inputs: Inputs): SimResult {
     // Rent month
     const currentRent = monthlyRent * Math.pow(1 + rentIncreasePct / 100, m / 12);
     const rentMonthly = currentRent + monthlyRentersInsurance;
-    rentInvestable = rentInvestable * (1 + monthlyROI) + monthlyInvestRenter;
+    rentInvestable = rentInvestable * (1 + monthlyROI) + Math.max(0, rentMonthlyAvailable);
     const rentNW = rentInvestable;
 
     monthly.push({
       month: m,
       fhaNW, convNW, rentNW,
-      fhaMonthly, convMonthly, rentMonthly,
+      fhaMonthly: fhaMonthlyHousing,
+      convMonthly: convMonthlyHousing,
+      rentMonthly,
       fhaBalance, convBalance,
     });
   }
@@ -319,10 +330,11 @@ const DEFAULT: Inputs = {
   monthlyInsurance: 150,
   propertyTaxPct: 1.0,
   totalAvailableCash: 100_000,
-  monthlyInvestRenter: 500,
-  monthlyInvestFHA: 200,
-  monthlyInvestConv: 300,
   investmentRoi: 7,
+  annualSalary: 90_000,
+  taxRatePct: 32,
+  monthlyFixedRenting: 3500,
+  monthlyFixedBuying: 4000,
   filingStatus: 'single',
   capGainsRatePct: 15,
 };
@@ -340,7 +352,42 @@ export default function RentVsBuyPage() {
 
   const { monthly, fhaPayoffMonth, convPayoffMonth } = useMemo(() => simulate(inputs), [inputs]);
 
-  // Derived values
+  // ─── Income & Cash Flow ──────────────────────────────────────────────────────
+  const monthlyNetIncome = inputs.annualSalary / 12 * (1 - inputs.taxRatePct / 100);
+
+  // Month 1 housing costs (from simulation)
+  const m1 = monthly[0];
+  const rentHousingCost = inputs.monthlyRent; // rent payment itself
+  const rentOtherExpenses = inputs.monthlyFixedRenting - inputs.monthlyRent; // remaining fixed
+  const rentMonthlyAvailable = monthlyNetIncome - inputs.monthlyFixedRenting;
+  const fhaMonthlyAvailable = monthlyNetIncome - inputs.monthlyFixedBuying - m1.fhaMonthly;
+  const convMonthlyAvailable = monthlyNetIncome - inputs.monthlyFixedBuying - m1.convMonthly;
+
+  const rentNegative = rentMonthlyAvailable < 0;
+  const fhaNegative = fhaMonthlyAvailable < 0;
+  const convNegative = convMonthlyAvailable < 0;
+  const anyNegative = rentNegative || fhaNegative || convNegative;
+
+  // ─── Down Payment Savings Timeline ───────────────────────────────────────────
+  const { monthsToFHA, monthsToConv } = useMemo(() => {
+    const fhaTarget = inputs.homePrice * (0.035 + inputs.buyingClosingCostsPct / 100);
+    const convTarget = inputs.homePrice * (0.20 + inputs.buyingClosingCostsPct / 100);
+    const monthlySave = Math.max(0, monthlyNetIncome - inputs.monthlyFixedRenting);
+    const roi = inputs.investmentRoi / 100 / 12;
+
+    let savings = inputs.totalAvailableCash;
+    let toFHA: number | null = savings >= fhaTarget ? 0 : null;
+    let toConv: number | null = savings >= convTarget ? 0 : null;
+
+    for (let m = 1; m <= 600 && (toFHA === null || toConv === null); m++) {
+      savings = savings * (1 + roi) + monthlySave;
+      if (toFHA === null && savings >= fhaTarget) toFHA = m;
+      if (toConv === null && savings >= convTarget) toConv = m;
+    }
+    return { monthsToFHA: toFHA, monthsToConv: toConv };
+  }, [inputs, monthlyNetIncome]);
+
+  // ─── Existing Derived Values ─────────────────────────────────────────────────
   const fhaDown = inputs.homePrice * 0.035;
   const convDown = inputs.homePrice * 0.20;
   const fhaBaseLoan = inputs.homePrice - fhaDown;
@@ -468,6 +515,52 @@ export default function RentVsBuyPage() {
         <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-6">
           {/* ─── Left: Inputs ──────────────────────────────────────────── */}
           <div className="space-y-3">
+            {/* Income & Taxes — NEW */}
+            <Section title="💰 Income & Taxes" defaultOpen={true}>
+              <Field label="Annual Gross Salary" value={inputs.annualSalary} onChange={setNum('annualSalary')} prefix="$" step={5000} />
+              <Field label="Combined Tax Rate (federal + FICA)" value={inputs.taxRatePct} onChange={setNum('taxRatePct')} suffix="%" step={1} hint="No WA state income tax" />
+              <Field
+                label="Monthly Fixed Expenses — Renting"
+                value={inputs.monthlyFixedRenting}
+                onChange={setNum('monthlyFixedRenting')}
+                prefix="$"
+                step={100}
+                hint="Includes rent, food, utilities, etc."
+              />
+              <Field
+                label="Monthly Fixed Expenses — If Buying"
+                value={inputs.monthlyFixedBuying}
+                onChange={setNum('monthlyFixedBuying')}
+                prefix="$"
+                step={100}
+                hint="Food, utilities, car — excludes housing"
+              />
+              <div className="bg-muted/30 rounded-md p-3 text-xs space-y-1 border">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Monthly net income:</span>
+                  <span className="font-semibold">{fmtFull(monthlyNetIncome)}</span>
+                </div>
+                <div className="flex justify-between text-blue-600">
+                  <span>Renting — available/mo:</span>
+                  <span className={`font-semibold ${rentNegative ? 'text-red-500' : 'text-blue-600'}`}>
+                    {fmtFull(rentMonthlyAvailable)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-emerald-600">
+                  <span>FHA — available/mo (est.):</span>
+                  <span className={`font-semibold ${fhaNegative ? 'text-red-500' : 'text-emerald-600'}`}>
+                    {fmtFull(fhaMonthlyAvailable)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-orange-600">
+                  <span>Conv — available/mo (est.):</span>
+                  <span className={`font-semibold ${convNegative ? 'text-red-500' : 'text-orange-600'}`}>
+                    {fmtFull(convMonthlyAvailable)}
+                  </span>
+                </div>
+              </div>
+            </Section>
+
             <Section title="🏠 Property">
               <Field label="Home Price" value={inputs.homePrice} onChange={setNum('homePrice')} prefix="$" step={5000} />
               <Field label="Annual Appreciation" value={inputs.appreciationPct} onChange={setNum('appreciationPct')} suffix="%" step={0.1} />
@@ -502,9 +595,6 @@ export default function RentVsBuyPage() {
 
             <Section title="📈 Financial" defaultOpen={false}>
               <Field label="Total Available Cash" value={inputs.totalAvailableCash} onChange={setNum('totalAvailableCash')} prefix="$" step={5000} hint="Savings/down payment pool" />
-              <Field label="Monthly Investment — Renter" value={inputs.monthlyInvestRenter} onChange={setNum('monthlyInvestRenter')} prefix="$" step={50} />
-              <Field label="Monthly Investment — FHA Buyer" value={inputs.monthlyInvestFHA} onChange={setNum('monthlyInvestFHA')} prefix="$" step={50} hint="Less cash after large down" />
-              <Field label="Monthly Investment — Conv Buyer" value={inputs.monthlyInvestConv} onChange={setNum('monthlyInvestConv')} prefix="$" step={50} />
               <Field label="Annual Investment ROI" value={inputs.investmentRoi} onChange={setNum('investmentRoi')} suffix="%" step={0.5} />
             </Section>
 
@@ -530,12 +620,139 @@ export default function RentVsBuyPage() {
 
           {/* ─── Right: Results ────────────────────────────────────────── */}
           <div className="space-y-5">
+            {/* ─── Monthly Cash Flow Card — NEW ──────────────────────── */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Wallet className="h-4 w-4" />
+                  Monthly Cash Flow (Year 1)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {anyNegative && (
+                  <div className="flex items-start gap-2 text-amber-600 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-md p-3 mb-4 text-sm">
+                    <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                    <span>
+                      {[rentNegative && 'Renting', fhaNegative && 'FHA Buy', convNegative && 'Conv Buy'].filter(Boolean).join(', ')} result{anyNegative && (rentNegative && fhaNegative && convNegative ? '' : 's')} in negative monthly cash flow — you&apos;d be spending more than you earn each month.
+                    </span>
+                  </div>
+                )}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-2 pr-4 text-muted-foreground font-medium text-xs"></th>
+                        <th className="text-right py-2 px-3 text-blue-500 font-medium text-xs">Rent</th>
+                        <th className="text-right py-2 px-3 text-emerald-500 font-medium text-xs">FHA Buy</th>
+                        <th className="text-right py-2 pl-3 text-orange-500 font-medium text-xs">Conv Buy</th>
+                      </tr>
+                    </thead>
+                    <tbody className="text-sm">
+                      <tr className="border-b">
+                        <td className="py-2 pr-4 text-muted-foreground text-xs">Monthly income</td>
+                        <td className="text-right py-2 px-3 font-medium">{fmtFull(monthlyNetIncome)}</td>
+                        <td className="text-right py-2 px-3 font-medium">{fmtFull(monthlyNetIncome)}</td>
+                        <td className="text-right py-2 pl-3 font-medium">{fmtFull(monthlyNetIncome)}</td>
+                      </tr>
+                      <tr className="border-b">
+                        <td className="py-2 pr-4 text-muted-foreground text-xs">Housing costs</td>
+                        <td className="text-right py-2 px-3 text-blue-600">{fmtFull(rentHousingCost)}</td>
+                        <td className="text-right py-2 px-3 text-emerald-600">{fmtFull(m1.fhaMonthly)}</td>
+                        <td className="text-right py-2 pl-3 text-orange-600">{fmtFull(m1.convMonthly)}</td>
+                      </tr>
+                      <tr className="border-b">
+                        <td className="py-2 pr-4 text-muted-foreground text-xs">Other expenses</td>
+                        <td className="text-right py-2 px-3">{fmtFull(rentOtherExpenses)}</td>
+                        <td className="text-right py-2 px-3">{fmtFull(inputs.monthlyFixedBuying)}</td>
+                        <td className="text-right py-2 pl-3">{fmtFull(inputs.monthlyFixedBuying)}</td>
+                      </tr>
+                      <tr>
+                        <td className="py-2 pr-4 text-xs font-semibold">Available/mo</td>
+                        <td className={`text-right py-2 px-3 font-bold ${rentNegative ? 'text-red-500' : 'text-blue-600'}`}>
+                          {fmtFull(rentMonthlyAvailable)}
+                          {rentNegative && ' ⚠️'}
+                        </td>
+                        <td className={`text-right py-2 px-3 font-bold ${fhaNegative ? 'text-red-500' : 'text-emerald-600'}`}>
+                          {fmtFull(fhaMonthlyAvailable)}
+                          {fhaNegative && ' ⚠️'}
+                        </td>
+                        <td className={`text-right py-2 pl-3 font-bold ${convNegative ? 'text-red-500' : 'text-orange-600'}`}>
+                          {fmtFull(convMonthlyAvailable)}
+                          {convNegative && ' ⚠️'}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Rent: housing = rent payment; other = remaining fixed expenses. Available amount is invested at {inputs.investmentRoi}% ROI. Negative → $0 invested.
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* ─── Down Payment Savings Timeline — NEW ───────────────── */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <TrendingUp className="h-4 w-4 text-blue-500" />
+                  Down Payment Savings Timeline (Rent Scenario)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="space-y-1">
+                    <div className="text-xs text-muted-foreground">FHA Down Payment</div>
+                    <div className="text-xs text-muted-foreground mb-1">
+                      Target: {fmtFull(inputs.homePrice * (0.035 + inputs.buyingClosingCostsPct / 100))}
+                      <span className="ml-1">(3.5% + {inputs.buyingClosingCostsPct}% closing)</span>
+                    </div>
+                    {monthsToFHA === null ? (
+                      <Badge variant="outline" className="text-xs text-red-500 border-red-400">
+                        Never (no savings surplus)
+                      </Badge>
+                    ) : monthsToFHA === 0 ? (
+                      <Badge variant="outline" className="text-xs border-emerald-500 text-emerald-600">
+                        ✓ Can buy FHA now
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs border-blue-500 text-blue-600">
+                        {monthsToFHA} months ({(monthsToFHA / 12).toFixed(1)} yrs)
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-xs text-muted-foreground">Conventional Down Payment</div>
+                    <div className="text-xs text-muted-foreground mb-1">
+                      Target: {fmtFull(inputs.homePrice * (0.20 + inputs.buyingClosingCostsPct / 100))}
+                      <span className="ml-1">(20% + {inputs.buyingClosingCostsPct}% closing)</span>
+                    </div>
+                    {monthsToConv === null ? (
+                      <Badge variant="outline" className="text-xs text-red-500 border-red-400">
+                        Never (no savings surplus)
+                      </Badge>
+                    ) : monthsToConv === 0 ? (
+                      <Badge variant="outline" className="text-xs border-emerald-500 text-emerald-600">
+                        ✓ Can buy Conv now
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs border-orange-500 text-orange-600">
+                        {monthsToConv} months ({(monthsToConv / 12).toFixed(1)} yrs)
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  Based on renting monthly surplus ({fmtFull(Math.max(0, rentMonthlyAvailable))}/mo) + current cash ({fmtFull(inputs.totalAvailableCash)}) compounding at {inputs.investmentRoi}% ROI.
+                </p>
+              </CardContent>
+            </Card>
+
             {/* Monthly Cost Summary */}
             <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base flex items-center gap-2">
                   <DollarSign className="h-4 w-4" />
-                  Monthly Cost at Year 1
+                  Monthly Housing Cost at Year 1
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -694,7 +911,7 @@ export default function RentVsBuyPage() {
             {/* Monthly Cost Bar Chart */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-base">Monthly Cost Over Time</CardTitle>
+                <CardTitle className="text-base">Monthly Housing Cost Over Time</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="h-64">
