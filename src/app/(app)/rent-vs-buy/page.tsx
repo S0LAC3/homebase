@@ -39,7 +39,7 @@ interface Inputs {
   // Income & Taxes
   annualSalary: number;
   taxRatePct: number;
-  monthlyFixedRenting: number; // ALL renting expenses including rent
+  monthlyFixedRenting: number; // non-housing monthly expenses (food, utilities, car, etc.) — rent shown separately
   monthlyFixedBuying: number;  // non-housing expenses when buying
   // Capital Gains Tax
   filingStatus: 'single' | 'married';
@@ -120,8 +120,9 @@ function simulate(inputs: Inputs): SimResult {
   const monthlyRate = mortgageRate / 100 / 12;
   const monthlyNetIncome = annualSalary / 12 * (1 - taxRatePct / 100);
 
-  // Fixed monthly investment for rent scenario (constant — rent increases are in monthlyRent)
-  const rentMonthlyAvailable = monthlyNetIncome - monthlyFixedRenting;
+  // Rent scenario: income - rent - other non-housing expenses = available to invest
+  // Note: rent increases are handled in the loop below; this is year 1 rate only used for initial setup
+  const rentMonthlyAvailable = monthlyNetIncome - monthlyRent - monthlyFixedRenting;
 
   // FHA setup
   const fhaDown = homePrice * 0.035;
@@ -196,10 +197,11 @@ function simulate(inputs: Inputs): SimResult {
     const convNetSale = homeValue - convBalance - homeValue * sellingClosingCostsPct / 100 - convCapGainsTax;
     const convNW = convInvestable + Math.max(0, convNetSale);
 
-    // Rent month
+    // Rent month — rent increases over time, so investable changes each month
     const currentRent = monthlyRent * Math.pow(1 + rentIncreasePct / 100, m / 12);
     const rentMonthly = currentRent + monthlyRentersInsurance;
-    rentInvestable = rentInvestable * (1 + monthlyROI) + Math.max(0, rentMonthlyAvailable);
+    const rentAvailableThisMonth = Math.max(0, monthlyNetIncome - currentRent - monthlyFixedRenting);
+    rentInvestable = rentInvestable * (1 + monthlyROI) + rentAvailableThisMonth;
     const rentNW = rentInvestable;
 
     monthly.push({
@@ -333,7 +335,7 @@ const DEFAULT: Inputs = {
   investmentRoi: 7,
   annualSalary: 90_000,
   taxRatePct: 32,
-  monthlyFixedRenting: 3500,
+  monthlyFixedRenting: 1500,
   monthlyFixedBuying: 4000,
   filingStatus: 'single',
   capGainsRatePct: 15,
@@ -358,8 +360,8 @@ export default function RentVsBuyPage() {
   // Month 1 housing costs (from simulation)
   const m1 = monthly[0];
   const rentHousingCost = inputs.monthlyRent; // rent payment itself
-  const rentOtherExpenses = inputs.monthlyFixedRenting - inputs.monthlyRent; // remaining fixed
-  const rentMonthlyAvailable = monthlyNetIncome - inputs.monthlyFixedRenting;
+  const rentOtherExpenses = inputs.monthlyFixedRenting; // non-housing other expenses
+  const rentMonthlyAvailable = monthlyNetIncome - inputs.monthlyRent - inputs.monthlyFixedRenting;
   const fhaMonthlyAvailable = monthlyNetIncome - inputs.monthlyFixedBuying - m1.fhaMonthly;
   const convMonthlyAvailable = monthlyNetIncome - inputs.monthlyFixedBuying - m1.convMonthly;
 
@@ -372,7 +374,7 @@ export default function RentVsBuyPage() {
   const { monthsToFHA, monthsToConv } = useMemo(() => {
     const fhaTarget = inputs.homePrice * (0.035 + inputs.buyingClosingCostsPct / 100);
     const convTarget = inputs.homePrice * (0.20 + inputs.buyingClosingCostsPct / 100);
-    const monthlySave = Math.max(0, monthlyNetIncome - inputs.monthlyFixedRenting);
+    const monthlySave = Math.max(0, monthlyNetIncome - inputs.monthlyRent - inputs.monthlyFixedRenting);
     const roi = inputs.investmentRoi / 100 / 12;
 
     let savings = inputs.totalAvailableCash;
