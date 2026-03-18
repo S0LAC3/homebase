@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useAuth } from '@/components/auth-provider';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -9,7 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { ExternalLink, Save, CheckCircle2, DollarSign, TrendingUp, AlertTriangle } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { ExternalLink, Save, CheckCircle2, DollarSign, TrendingUp, AlertTriangle, Search, Home, Bed, Bath, Square, Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/mortgage';
 import type { SearchPrefs } from '@/types';
@@ -67,12 +68,6 @@ function buildJohnLScottUrl(prefs: SearchPrefs): string {
 
 // ── Affordability math ────────────────────────────────────────────────────────
 
-/**
- * Rough max affordable price based on 43% DTI.
- * Monthly income × 0.43 − monthly_debt = max housing payment.
- * Use 30-yr fixed P&I at ~7% → payment factor ≈ 0.006653 per dollar of loan.
- * Down payment assumed 3.5% (FHA) or 5% (Conventional).
- */
 function calcAffordability(income: number | null, monthlyDebt: number | null) {
   if (!income) return null;
   const monthlyIncome = income / 12;
@@ -80,20 +75,16 @@ function calcAffordability(income: number | null, monthlyDebt: number | null) {
   const maxHousingPayment = monthlyIncome * 0.43 - existingDebt;
   if (maxHousingPayment <= 0) return null;
 
-  // FHA: 3.5% down, rate ~6.75%, 30yr  → factor ~0.006487; add MIP ~0.55%/12
   const fhaRate = 0.0675 / 12;
   const fhaN = 360;
   const fhaPaymentFactor = (fhaRate * Math.pow(1 + fhaRate, fhaN)) / (Math.pow(1 + fhaRate, fhaN) - 1);
   const fhaMipFactor = 0.0055 / 12;
-  // payment = loanAmount * (fhaPaymentFactor + mipFactor); loanAmount = price * 0.965
   const fhaMaxLoan = maxHousingPayment / (fhaPaymentFactor + fhaMipFactor);
   const fhaMaxPrice = Math.round(fhaMaxLoan / 0.965);
 
-  // Conventional: 5% down, rate ~7.0%, 30yr
   const convRate = 0.07 / 12;
   const convN = 360;
   const convPaymentFactor = (convRate * Math.pow(1 + convRate, convN)) / (Math.pow(1 + convRate, convN) - 1);
-  // PMI ~0.5%/12 until 20% equity; ignore for simplicity at max calc
   const convMaxLoan = maxHousingPayment / convPaymentFactor;
   const convMaxPrice = Math.round(convMaxLoan / 0.95);
 
@@ -153,6 +144,178 @@ const PLATFORMS = [
   },
 ];
 
+// ── Listing types ─────────────────────────────────────────────────────────────
+
+interface Listing {
+  id: string;
+  formattedAddress?: string;
+  addressLine1?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  price?: number;
+  squareFootage?: number;
+  bedrooms?: number;
+  bathrooms?: number;
+  propertyType?: string;
+  daysOnMarket?: number;
+  photoUrl?: string;
+  status?: string;
+  listedDate?: string;
+  latitude?: number;
+  longitude?: number;
+}
+
+interface ListingsResponse {
+  listings: Listing[];
+  page: number;
+  limit: number;
+  callsUsed: number;
+  callsRemaining: number;
+  cached: boolean;
+}
+
+interface QuotaExceededResponse {
+  error: string;
+  callsUsed: number;
+  limit: number;
+  resetsAt: string;
+}
+
+// ── Listing Card ──────────────────────────────────────────────────────────────
+
+function ListingCard({ listing, onSave }: { listing: Listing; onSave: (l: Listing) => Promise<void> }) {
+  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await onSave(listing);
+      setSaved(true);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const pricePerSqft = listing.price && listing.squareFootage
+    ? Math.round(listing.price / listing.squareFootage)
+    : null;
+
+  const address = listing.formattedAddress ?? listing.addressLine1 ?? 'Unknown Address';
+
+  return (
+    <Card className="overflow-hidden hover:shadow-md transition-shadow">
+      {/* Photo */}
+      <div className="relative h-44 bg-muted">
+        {listing.photoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={listing.photoUrl}
+            alt={address}
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              (e.currentTarget as HTMLImageElement).style.display = 'none';
+            }}
+          />
+        ) : (
+          <div className="flex items-center justify-center h-full text-muted-foreground">
+            <Home className="h-12 w-12 opacity-30" />
+          </div>
+        )}
+        {listing.daysOnMarket !== undefined && (
+          <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-0.5 rounded-full flex items-center gap-1">
+            <Calendar className="h-3 w-3" />
+            {listing.daysOnMarket}d
+          </div>
+        )}
+      </div>
+
+      <CardContent className="p-4 space-y-3">
+        {/* Price */}
+        <div className="flex items-start justify-between gap-2">
+          <p className="text-xl font-bold text-blue-600">
+            {listing.price ? formatCurrency(listing.price) : 'Price N/A'}
+          </p>
+          {listing.propertyType && (
+            <Badge variant="secondary" className="text-xs shrink-0">
+              {listing.propertyType}
+            </Badge>
+          )}
+        </div>
+
+        {/* Address */}
+        <p className="text-sm font-medium leading-snug">{address}</p>
+
+        {/* Stats */}
+        <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+          {listing.bedrooms !== undefined && (
+            <span className="flex items-center gap-1">
+              <Bed className="h-3 w-3" /> {listing.bedrooms} bd
+            </span>
+          )}
+          {listing.bathrooms !== undefined && (
+            <span className="flex items-center gap-1">
+              <Bath className="h-3 w-3" /> {listing.bathrooms} ba
+            </span>
+          )}
+          {listing.squareFootage && (
+            <span className="flex items-center gap-1">
+              <Square className="h-3 w-3" /> {listing.squareFootage.toLocaleString()} sqft
+            </span>
+          )}
+          {pricePerSqft && (
+            <span className="flex items-center gap-1">
+              <DollarSign className="h-3 w-3" /> {pricePerSqft}/sqft
+            </span>
+          )}
+        </div>
+
+        {/* Save button */}
+        <Button
+          size="sm"
+          variant={saved ? 'secondary' : 'default'}
+          className="w-full"
+          onClick={handleSave}
+          disabled={saving || saved}
+        >
+          {saved ? (
+            <>
+              <CheckCircle2 className="h-3.5 w-3.5 mr-1.5" /> Saved ✓
+            </>
+          ) : saving ? (
+            'Saving...'
+          ) : (
+            <>
+              <Save className="h-3.5 w-3.5 mr-1.5" /> Save Property
+            </>
+          )}
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ── Loading Skeleton ──────────────────────────────────────────────────────────
+
+function ListingSkeleton() {
+  return (
+    <Card className="overflow-hidden">
+      <Skeleton className="h-44 w-full rounded-none" />
+      <CardContent className="p-4 space-y-3">
+        <Skeleton className="h-6 w-32" />
+        <Skeleton className="h-4 w-full" />
+        <div className="flex gap-3">
+          <Skeleton className="h-3 w-16" />
+          <Skeleton className="h-3 w-16" />
+          <Skeleton className="h-3 w-20" />
+        </div>
+        <Skeleton className="h-9 w-full" />
+      </CardContent>
+    </Card>
+  );
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export default function BrowsePage() {
@@ -169,6 +332,20 @@ export default function BrowsePage() {
     min_beds: 2,
     min_baths: 1,
   });
+
+  // Live listings state
+  const [listingsCity, setListingsCity] = useState('Seattle');
+  const [listingsState, setListingsState] = useState('WA');
+  const [listingsMinPrice, setListingsMinPrice] = useState('500000');
+  const [listingsMaxPrice, setListingsMaxPrice] = useState('900000');
+  const [listingsMinBeds, setListingsMinBeds] = useState('2');
+  const [listingsPage, setListingsPage] = useState(1);
+  const [listings, setListings] = useState<Listing[] | null>(null);
+  const [listingsLoading, setListingsLoading] = useState(false);
+  const [callsUsed, setCallsUsed] = useState<number | null>(null);
+  const [callsRemaining, setCallsRemaining] = useState<number | null>(null);
+  const [quotaExceeded, setQuotaExceeded] = useState<QuotaExceededResponse | null>(null);
+  const [hasSearched, setHasSearched] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -204,7 +381,7 @@ export default function BrowsePage() {
     fetchProfile();
   }, [user, authLoading]);
 
-  const handleSave = async () => {
+  const handleSavePrefs = async () => {
     if (!user) return;
     setSaving(true);
     const supabase = createClient();
@@ -220,6 +397,84 @@ export default function BrowsePage() {
     setSaving(false);
   };
 
+  const fetchListings = useCallback(async (page: number) => {
+    if (!user) return;
+    setListingsLoading(true);
+    setQuotaExceeded(null);
+
+    try {
+      const supabase = createClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        toast.error('Not authenticated');
+        return;
+      }
+
+      const params = new URLSearchParams({
+        city: listingsCity,
+        state: listingsState,
+        minPrice: listingsMinPrice,
+        maxPrice: listingsMaxPrice,
+        minBeds: listingsMinBeds,
+        page: String(page),
+      });
+
+      const res = await fetch(`/api/listings?${params}`, {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      if (res.status === 429) {
+        const data: QuotaExceededResponse = await res.json();
+        setQuotaExceeded(data);
+        setListings(null);
+        return;
+      }
+
+      if (!res.ok) {
+        const err = await res.json();
+        toast.error(err.error ?? 'Failed to fetch listings');
+        return;
+      }
+
+      const data: ListingsResponse = await res.json();
+      setListings(data.listings);
+      setCallsUsed(data.callsUsed);
+      setCallsRemaining(data.callsRemaining);
+      setListingsPage(page);
+      setHasSearched(true);
+    } finally {
+      setListingsLoading(false);
+    }
+  }, [user, listingsCity, listingsState, listingsMinPrice, listingsMaxPrice, listingsMinBeds]);
+
+  const handleSearch = () => {
+    fetchListings(1);
+  };
+
+  const handleSaveProperty = async (listing: Listing) => {
+    if (!user) return;
+    const supabase = createClient();
+    const { error } = await supabase.from('properties').insert({
+      user_id: user.id,
+      address: listing.formattedAddress ?? listing.addressLine1 ?? '',
+      city: listing.city ?? listingsCity,
+      state: listing.state ?? listingsState,
+      zip: listing.zipCode ?? '',
+      price: listing.price ?? 0,
+      sqft: listing.squareFootage ?? null,
+      bedrooms: listing.bedrooms ?? null,
+      bathrooms: listing.bathrooms ?? null,
+    });
+
+    if (error) {
+      toast.error('Failed to save property');
+      throw error;
+    }
+    toast.success('Saved!');
+  };
+
   const affordability = calcAffordability(income, monthlyDebt);
 
   const getAffordabilityStatus = () => {
@@ -232,6 +487,11 @@ export default function BrowsePage() {
   };
 
   const afStatus = getAffordabilityStatus();
+
+  // Reset month display
+  const now = new Date();
+  const resetDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const resetStr = resetDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
 
   if (profileLoading) {
     return (
@@ -250,6 +510,184 @@ export default function BrowsePage() {
         <h1 className="text-2xl font-bold">Browse Listings</h1>
         <p className="text-muted-foreground">Find properties within your budget across top listing sites.</p>
       </div>
+
+      {/* ── Live Listings Section ── */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Search className="h-5 w-5 text-blue-600" />
+                Live Listings
+              </CardTitle>
+              <CardDescription>Real listings pulled directly from Rentcast MLS data.</CardDescription>
+            </div>
+            {/* Usage badge */}
+            <div className="shrink-0">
+              <Badge
+                variant={callsUsed !== null && callsUsed >= 2 ? 'destructive' : 'secondary'}
+                className="text-xs whitespace-nowrap"
+              >
+                {callsUsed ?? 0}/2 API calls used this month (resets {resetStr})
+              </Badge>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Filter bar */}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-6 gap-3 items-end">
+            <div className="space-y-1.5">
+              <Label className="text-xs">City</Label>
+              <Input
+                value={listingsCity}
+                onChange={(e) => setListingsCity(e.target.value)}
+                placeholder="Seattle"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">State</Label>
+              <Input
+                value={listingsState}
+                onChange={(e) => setListingsState(e.target.value)}
+                placeholder="WA"
+                maxLength={2}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Min Price ($)</Label>
+              <Input
+                type="number"
+                value={listingsMinPrice}
+                onChange={(e) => setListingsMinPrice(e.target.value)}
+                placeholder="500000"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Max Price ($)</Label>
+              <Input
+                type="number"
+                value={listingsMaxPrice}
+                onChange={(e) => setListingsMaxPrice(e.target.value)}
+                placeholder="900000"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Min Beds</Label>
+              <Select value={listingsMinBeds} onValueChange={(v) => v && setListingsMinBeds(v)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1+</SelectItem>
+                  <SelectItem value="2">2+</SelectItem>
+                  <SelectItem value="3">3+</SelectItem>
+                  <SelectItem value="4">4+</SelectItem>
+                  <SelectItem value="5">5+</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <Button onClick={handleSearch} disabled={listingsLoading} className="w-full">
+              {listingsLoading ? (
+                'Searching...'
+              ) : (
+                <>
+                  <Search className="h-4 w-4 mr-2" />
+                  Search
+                </>
+              )}
+            </Button>
+          </div>
+
+          {/* Quota exceeded state */}
+          {quotaExceeded && (
+            <div className="rounded-lg border border-red-300 bg-red-50/50 dark:bg-red-950/20 dark:border-red-800 p-4 space-y-2">
+              <div className="flex items-center gap-2 text-red-700 dark:text-red-400">
+                <AlertTriangle className="h-5 w-5" />
+                <p className="font-semibold">Monthly quota reached</p>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                You&apos;ve used your 2 free API calls for this month. Your quota resets on{' '}
+                <span className="font-medium">
+                  {new Date(quotaExceeded.resetsAt).toLocaleDateString('en-US', {
+                    month: 'long',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
+                </span>
+                .
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Tip: Cached results from previous searches don&apos;t count toward your quota!
+              </p>
+            </div>
+          )}
+
+          {/* Loading skeleton */}
+          {listingsLoading && (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {Array.from({ length: 10 }).map((_, i) => (
+                <ListingSkeleton key={i} />
+              ))}
+            </div>
+          )}
+
+          {/* Results grid */}
+          {!listingsLoading && listings !== null && (
+            <>
+              {listings.length === 0 ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Home className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                  <p className="font-medium">No listings found</p>
+                  <p className="text-sm">Try adjusting your filters or searching a different area.</p>
+                </div>
+              ) : (
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                  {listings.map((listing) => (
+                    <ListingCard key={listing.id} listing={listing} onSave={handleSaveProperty} />
+                  ))}
+                </div>
+              )}
+
+              {/* Pagination */}
+              {listings.length > 0 && (
+                <div className="flex items-center justify-center gap-3 pt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fetchListings(listingsPage - 1)}
+                    disabled={listingsPage <= 1 || listingsLoading}
+                  >
+                    <ChevronLeft className="h-4 w-4 mr-1" /> Previous
+                  </Button>
+                  <span className="text-sm text-muted-foreground">Page {listingsPage}</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => fetchListings(listingsPage + 1)}
+                    disabled={listings.length < 10 || listingsLoading || (callsRemaining !== null && callsRemaining <= 0)}
+                  >
+                    Next <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
+              )}
+
+              {listings.length > 0 && (
+                <p className="text-xs text-center text-muted-foreground">
+                  Each page = 1 API call · Cached results are free
+                </p>
+              )}
+            </>
+          )}
+
+          {/* Initial empty state (before first search) */}
+          {!listingsLoading && !hasSearched && !quotaExceeded && (
+            <div className="text-center py-10 text-muted-foreground">
+              <Search className="h-10 w-10 mx-auto mb-3 opacity-20" />
+              <p className="text-sm">Set your filters above and click Search to load live listings.</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Budget settings */}
       <Card>
@@ -326,7 +764,7 @@ export default function BrowsePage() {
               </Select>
             </div>
             <div className="flex items-end">
-              <Button onClick={handleSave} disabled={saving} className="w-full">
+              <Button onClick={handleSavePrefs} disabled={saving} className="w-full">
                 {saving ? (
                   'Saving...'
                 ) : (
